@@ -105,8 +105,8 @@ void tamagotchiUpdate() {
     if (s_energy > 5)    s_energy -= 1;
   }
 
-  // Matikan feedback animasi setelah 1.4 detik
-  if (s_feedback != FEEDBACK_NONE && (now - s_feedbackMs > 1400)) {
+  // Matikan feedback HUD setelah 2.5 detik
+  if (s_feedback != FEEDBACK_NONE && (now - s_feedbackMs > 2500)) {
     s_feedback = FEEDBACK_NONE;
   }
 
@@ -188,23 +188,19 @@ void tamagotchiUpdate() {
     // Render ekspresi wajah ke buffer
     drawFaceToBuffer(fs, now);
 
-    // 1. Unified Top HUD Bar (Solid Hitam, Teks Putih Elegan)
-    fbFillRect(0, 0, OLED_W, 12, C_BLACK);
-    char hudBuf[32];
-    snprintf(hudBuf, sizeof(hudBuf), "KENYANG:%d%%  SENANG:%d%%", s_hunger, s_happiness);
-    int hudW = fbGetStringWidth(hudBuf);
-    fbDrawString((OLED_W - hudW) / 2, 2, hudBuf, C_WHITE);
-
-    // 2. Banner Feedback Aksi (Muncul saat Baru Saja Diberi Makan / Dielus)
+    // HUD Muncul Hanya Saat Interaksi (Makan / Elus) Selama 2.5 Detik
     if (s_feedback == FEEDBACK_FEED) {
-      fbFillRoundRect(16, 26, 96, 14, 2, C_BLACK);
-      fbRect(17, 27, 94, 12, C_WHITE);
-      fbDrawString(24, 29, "+MAKAN NYAM! (+20)", C_WHITE);
+      fbFillRect(0, 0, OLED_W, 12, C_BLACK);
+      char hudBuf[28];
+      snprintf(hudBuf, sizeof(hudBuf), "KENYANG: %d%% (+20)", s_hunger);
+      int hudW = fbGetStringWidth(hudBuf);
+      fbDrawString((OLED_W - hudW) / 2, 2, hudBuf, C_WHITE);
     } else if (s_feedback == FEEDBACK_PET) {
-      fbFillRoundRect(16, 26, 96, 14, 2, C_BLACK);
-      fbRect(17, 27, 94, 12, C_WHITE);
-      fbDrawHeart(22, 33, 2, C_WHITE);
-      fbDrawString(30, 29, "DISAYANG! (+25)", C_WHITE);
+      fbFillRect(0, 0, OLED_W, 12, C_BLACK);
+      char hudBuf[28];
+      snprintf(hudBuf, sizeof(hudBuf), "SENANG: %d%% (+25)", s_happiness);
+      int hudW = fbGetStringWidth(hudBuf);
+      fbDrawString((OLED_W - hudW) / 2, 2, hudBuf, C_WHITE);
     }
 
     displayFlush();

@@ -467,7 +467,46 @@ static void updateSubmenuInbox(uint32_t now) {
   // ---------------------------------------------------------------------------
   // TAMPILAN DAFTAR PESAN (LIST)
   // ---------------------------------------------------------------------------
-  // Total opsi: pesan-pesan yang ada + "KOSONGKAN RIWAYAT" + "KEMBALI"
+  // KASUS 1: JIKA INBOX MASIH KOSONG (BELUM ADA NOTIFIKASI DARI HP)
+  if (count == 0) {
+    if (g_touchPending || g_navPending) {
+      g_touchPending = false;
+      g_navPending   = false;
+      s_state        = MENU_STATE_MAIN;
+      s_lastActivityMs = now;
+      return;
+    }
+
+    if (now - s_lastActivityMs > 20000) {
+      menuClose();
+      return;
+    }
+
+    displayClear();
+
+    // Header Bar
+    fbFillRect(0, 0, OLED_W, 13, C_BLACK);
+    int tW = fbGetStringWidth("RIWAYAT NOTIF (0)");
+    fbDrawString((OLED_W - tW) / 2, 3, "RIWAYAT NOTIF (0)", C_WHITE);
+
+    // Pesan Informasi
+    int w1 = fbGetStringWidth("Belum ada notifikasi");
+    fbDrawString((OLED_W - w1) / 2, 21, "Belum ada notifikasi", C_BLACK);
+
+    int w2 = fbGetStringWidth("Kirim dari aplikasi HP");
+    fbDrawString((OLED_W - w2) / 2, 32, "Kirim dari aplikasi HP", C_BLACK);
+
+    // Tombol Bersih Kembali
+    fbFillRoundRect(8, 48, 112, 12, 2, C_BLACK);
+    int bW = fbGetStringWidth("KEMBALI KE MENU");
+    fbDrawString((OLED_W - bW) / 2, 50, "KEMBALI KE MENU", C_WHITE);
+
+    displayFlush();
+    delay(20);
+    return;
+  }
+
+  // KASUS 2: JIKA ADA NOTIFIKASI TERSIMPAN (count > 0)
   int totalItems = count + 2;
 
   if (g_navPending) {
@@ -524,12 +563,6 @@ static void updateSubmenuInbox(uint32_t now) {
   snprintf(titleBuf, sizeof(titleBuf), "RIWAYAT NOTIF (%d)", count);
   int tW = fbGetStringWidth(titleBuf);
   fbDrawString((OLED_W - tW) / 2, 3, titleBuf, C_WHITE);
-
-  if (count == 0) {
-    // Pesan Kosong
-    fbDrawString(14, 22, "Belum ada notifikasi", C_BLACK);
-    fbDrawString(14, 33, "masuk dari HP via BLE", C_BLACK);
-  }
 
   // Render Item dalam Viewport
   for (int i = 0; i < 4; ++i) {
