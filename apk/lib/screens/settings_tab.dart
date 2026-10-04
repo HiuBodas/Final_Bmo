@@ -48,8 +48,13 @@ class _SettingsTabState extends State<SettingsTab> {
         final connectedDevice = _ble.connectedDevice;
         final scanResults = _ble.scanResults.where((r) {
           if (!_filterBmoOnly) return true;
-          final name = r.device.platformName.toUpperCase();
-          return name.contains('BMO') || name.contains('ESP32');
+          final name = (r.device.platformName.isNotEmpty
+                  ? r.device.platformName
+                  : r.advertisementData.advName)
+              .toUpperCase();
+          final hasBmoService =
+              r.advertisementData.serviceUuids.contains(BleService.serviceUuid);
+          return hasBmoService || name.contains('BMO') || name.contains('ESP32');
         }).toList();
 
         return ListView(
@@ -214,7 +219,11 @@ class _SettingsTabState extends State<SettingsTab> {
                       separatorBuilder: (_, __) => const Divider(color: BmoTheme.glassBorderSubtle, height: 1),
                       itemBuilder: (context, index) {
                         final r = scanResults[index];
-                        final name = r.device.platformName.isNotEmpty ? r.device.platformName : 'Perangkat BLE';
+                        final name = r.device.platformName.isNotEmpty
+                            ? r.device.platformName
+                            : (r.advertisementData.advName.isNotEmpty
+                                ? r.advertisementData.advName
+                                : 'Perangkat BLE');
                         final isThisConnected = connectedDevice?.remoteId == r.device.remoteId;
 
                         return ListTile(

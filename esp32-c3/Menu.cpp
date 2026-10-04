@@ -247,6 +247,7 @@ static void updateMainMenu(uint32_t now) {
 
       case 5: // BLUETOOTH & NOTIF
         s_state = MENU_STATE_SUB_BLE;
+        bleMenuOpen();
         return;
 
       case 6: // PENGATURAN BMO

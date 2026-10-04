@@ -61,18 +61,23 @@ class BleService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await FlutterBluePlus.startScan(
-        timeout: timeout,
-        androidUsesFineLocation: true,
-      );
-
+      // Dengarkan hasil scan SEBELUM scan dimulai agar tidak ada hasil terlewat
       _scanSub?.cancel();
       _scanSub = FlutterBluePlus.scanResults.listen((results) {
         _scanResults = results;
         notifyListeners();
       });
+
+      // androidUsesFineLocation harus false: izin ACCESS_FINE_LOCATION hanya
+      // dideklarasikan sampai Android 11 (maxSdkVersion 30). Jika true, scan
+      // gagal diam-diam di Android 12+ dan BMO tidak pernah terdeteksi.
+      await FlutterBluePlus.startScan(
+        timeout: timeout,
+        androidUsesFineLocation: false,
+      );
     } catch (e) {
       debugPrint('[BLE] Scan error: $e');
+      _addLog('Gagal Memindai', e.toString(), false);
     }
   }
 
@@ -140,7 +145,13 @@ class BleService extends ChangeNotifier {
     } catch (e) {
       debugPrint('[BLE] Connection error: $e');
       _addLog('Gagal Terhubung', e.toString(), false);
+      // Putuskan koneksi setengah jadi agar BMO kembali advertising
+      try {
+        await device.disconnect();
+      } catch (_) {}
       _connectedDevice = null;
+      _rxCharacteristic = null;
+      _txCharacteristic = null;
       notifyListeners();
       return false;
     }

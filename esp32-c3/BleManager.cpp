@@ -166,6 +166,15 @@ void bleInit() {
   s_bleMenuIdx      = 0;
 }
 
+// Dipanggil setiap kali submenu BLE dibuka dari Menu Utama.
+// Mereset timer inaktivitas agar menu tidak langsung tertutup (timer lama/basi).
+void bleMenuOpen() {
+  s_bleSubState   = BLE_SUB_MENU;
+  s_lastMenuActMs = millis();
+  g_touchPending  = false;
+  g_navPending    = false;
+}
+
 void bleStart(BleTargetOS target) {
   initBleStackInternal();
 
@@ -573,6 +582,12 @@ void bleMenuUpdate() {
       return;
     }
 
+    // Abaikan sisa sentuhan selama 1 detik pertama (mencegah batal tidak sengaja)
+    if (now - s_connectStartMs < 1000) {
+      g_touchPending = false;
+      g_navPending = false;
+    }
+
     // Sentuh Sensor 1 atau Sensor 2 untuk membatalkan
     if (g_touchPending || g_navPending) {
       g_touchPending = false;
@@ -648,16 +663,14 @@ void bleMenuUpdate() {
     fbDrawString(30, 21, "TERHUBUNG!", C_BLACK);
     fbDrawString(30, 33, "HP Siap Kirim Notif", C_BLACK);
 
-    // Footer
-    int infoW = fbGetStringWidth("Kembali ke Wajah BMO...");
-    fbDrawString((OLED_W - infoW) / 2, 54, "Kembali ke Wajah BMO...", C_BLACK);
-
     displayFlush();
 
-    // Tampil 1.8 detik lalu otomatis tutup menu kembali ke Home
+    // Tampil 1.8 detik lalu kembali ke menu Bluetooth (tidak keluar ke Home)
     if (now - s_connectSuccessMs >= 1800) {
-      s_bleSubState = BLE_SUB_MENU;
-      menuClose();
+      s_bleSubState   = BLE_SUB_MENU;
+      s_lastMenuActMs = now;
+      g_touchPending  = false;
+      g_navPending    = false;
     }
     delay(20);
     return;

@@ -46,6 +46,7 @@ bool bleHasPendingMood(Mood &m);
 bool bleHasPendingReaction(TouchKind &k);
 
 // Menu Sub-Halaman BLE
+void bleMenuOpen();
 void bleMenuUpdate();
 
 // Riwayat Notifikasi Masuk (Inbox 5 Pesan Terakhir)
