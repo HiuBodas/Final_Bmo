@@ -708,8 +708,12 @@ void bleMenuUpdate() {
       }
       return;
     } else if (s_bleMenuIdx == 2) {
-      // 3. MATIKAN BLUETOOTH
-      bleStop();
+      // 3. NYALAKAN / MATIKAN BLUETOOTH (manual oleh pengguna)
+      if (s_bleActive) {
+        bleStop();
+      } else {
+        bleStart(BLE_OS_ANDROID);
+      }
       return;
     } else {
       // 4. KEMBALI KE HOME
@@ -729,14 +733,15 @@ void bleMenuUpdate() {
 
   // Header Title Bar
   fbFillRect(0, 0, OLED_W, 13, C_BLACK);
-  const char* titleTxt = s_deviceConnected ? "BLE [TERHUBUNG]" : "BLUETOOTH & NOTIF";
+  const char* titleTxt = s_deviceConnected ? "BLE: TERHUBUNG"
+                       : (s_bleActive ? "BLE: AKTIF" : "BLE: MATI");
   int titleW = fbGetStringWidth(titleTxt);
   fbDrawString((OLED_W - titleW) / 2, 3, titleTxt, C_WHITE);
 
-  static const char* const bleItems[] = {
+  const char* bleItems[] = {
     "SAMBUNG ANDROID",
     "SAMBUNG IOS",
-    "MATIKAN BLUETOOTH",
+    s_bleActive ? "MATIKAN BLUETOOTH" : "NYALAKAN BLUETOOTH",
     "KEMBALI KE HOME"
   };
 

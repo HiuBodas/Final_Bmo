@@ -41,9 +41,9 @@ void setup() {
   Serial.println("[init] Display SSD1306 ready.");
 
   // 3. Inisialisasi Sistem Menu Vektor Prosedural & BLE Stack
+  // BLE tidak dinyalakan otomatis; nyalakan/matikan manual lewat menu BLUETOOTH.
   menuInit();
-  bleStart(BLE_OS_ANDROID);
-  Serial.println("[init] Menu system & BLE ready (Advertising BMO).");
+  Serial.println("[init] Menu system ready (BLE OFF, nyalakan manual via menu).");
 
   randomSeed(analogRead(0) + micros());
   if (menuIsMochiEngineEnabled()) {
