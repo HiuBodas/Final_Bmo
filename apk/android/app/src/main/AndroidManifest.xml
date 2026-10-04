@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.bmo.companion">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Izin Bluetooth Low Energy Android 12+ -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
@@ -16,7 +15,7 @@
     <application
         android:label="BMO Companion"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@drawable/ic_launcher">
         <activity
             android:name=".MainActivity"
             android:exported="true"

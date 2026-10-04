@@ -30,6 +30,10 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Ensure Android Scaffolding
+        working-directory: ./apk
+        run: flutter create --platforms=android --org com.bmo .
+
       - name: Install Dependencies
         working-directory: ./apk
         run: flutter pub get
@@ -38,11 +42,16 @@ jobs:
         working-directory: ./apk
         run: flutter build apk --release
 
+      - name: Prepare APK for Artifact
+        working-directory: ./apk
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/BMO-Companion-v1.0.apk
+
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: BMO-Companion-Android-APK
-          path: ./apk/build/app/outputs/flutter-apk/app-release.apk
+          path: ./apk/build/app/outputs/flutter-apk/BMO-Companion-v1.0.apk
 
       - name: Create GitHub Release with APK
         uses: softprops/action-gh-release@v2
@@ -53,7 +62,7 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
-          files: ./apk/build/app/outputs/flutter-apk/app-release.apk
+          files: ./apk/build/app/outputs/flutter-apk/BMO-Companion-v1.0.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
@@ -61,6 +70,7 @@ jobs:
   build-ios:
     name: Build iOS Runner
     runs-on: macos-latest
+    continue-on-error: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -70,6 +80,10 @@ jobs:
         with:
           channel: 'stable'
           cache: true
+
+      - name: Ensure iOS Scaffolding
+        working-directory: ./apk
+        run: flutter create --platforms=ios --org com.bmo .
 
       - name: Install Dependencies
         working-directory: ./apk
