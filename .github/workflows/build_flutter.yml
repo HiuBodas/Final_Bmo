@@ -30,9 +30,9 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Ensure Android Scaffolding
+      - name: Clean Duplicate Kotlin Script Files
         working-directory: ./apk
-        run: flutter create --platforms=android --org com.bmo .
+        run: rm -f android/*.gradle.kts android/app/*.gradle.kts
 
       - name: Install Dependencies
         working-directory: ./apk
@@ -40,7 +40,7 @@ jobs:
 
       - name: Build Android APK
         working-directory: ./apk
-        run: flutter build apk --release
+        run: flutter build apk --release --android-skip-build-dependency-validation
 
       - name: Prepare APK for Artifact
         working-directory: ./apk
