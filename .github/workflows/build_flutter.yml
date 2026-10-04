@@ -1,0 +1,86 @@
+name: Build BMO Flutter App (Android APK & iOS)
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: ./apk
+        run: flutter pub get
+
+      - name: Build Android APK
+        working-directory: ./apk
+        run: flutter build apk --release
+
+      - name: Upload Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BMO-Companion-Android-APK
+          path: ./apk/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Create GitHub Release with APK
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        with:
+          tag_name: v1.0.0
+          name: BMO Companion Release v1.0.0
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: ./apk/build/app/outputs/flutter-apk/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  build-ios:
+    name: Build iOS Runner
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: ./apk
+        run: flutter pub get
+
+      - name: Build iOS (No Codesign for Sideloading)
+        working-directory: ./apk
+        run: flutter build ios --release --no-codesign
+
+      - name: Upload iOS Runner Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BMO-Companion-iOS-Runner
+          path: ./apk/build/ios/iphoneos/Runner.app
