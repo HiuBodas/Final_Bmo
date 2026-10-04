@@ -626,11 +626,6 @@ void bleMenuUpdate() {
     snprintf(waitBuf, sizeof(waitBuf), "Menunggu%.*s", dots, "...");
     fbDrawString(38, 39, waitBuf, C_BLACK);
 
-    // 4. Footer Pembatalan
-    fbHLine(6, 52, 116, C_BLACK);
-    int cancelW = fbGetStringWidth("SENTUH: BATAL");
-    fbDrawString((OLED_W - cancelW) / 2, 54, "SENTUH: BATAL", C_BLACK);
-
     displayFlush();
     delay(20);
     return;

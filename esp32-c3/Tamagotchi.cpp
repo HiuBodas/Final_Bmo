@@ -188,30 +188,12 @@ void tamagotchiUpdate() {
     // Render ekspresi wajah ke buffer
     drawFaceToBuffer(fs, now);
 
-    // 1. Mini Top HUD Bar (y = 0..11)
-    fbFillRect(0, 0, OLED_W, 11, C_BLACK);
-
-    // Ikon Hati & Senang
-    fbDrawHeart(8, 5, 2, C_WHITE);
-    char hapBuf[12];
-    snprintf(hapBuf, sizeof(hapBuf), "%d%%", s_happiness);
-    fbDrawString(14, 2, hapBuf, C_WHITE);
-
-    // Pembatas tengah
-    fbVLine(46, 1, 9, C_WHITE);
-
-    // Ikon Makan & Kenyang
-    fbRect(52, 2, 7, 7, C_WHITE);
-    fbFillRect(54, 4, 3, 3, C_WHITE);
-    char hngBuf[12];
-    snprintf(hngBuf, sizeof(hngBuf), "%d%%", s_hunger);
-    fbDrawString(63, 2, hngBuf, C_WHITE);
-
-    // Pembatas kanan
-    fbVLine(94, 1, 9, C_WHITE);
-
-    // Label Mode
-    fbDrawString(98, 2, "[PET]", C_WHITE);
+    // 1. Unified Top HUD Bar (Solid Hitam, Teks Putih Elegan)
+    fbFillRect(0, 0, OLED_W, 12, C_BLACK);
+    char hudBuf[32];
+    snprintf(hudBuf, sizeof(hudBuf), "KENYANG:%d%%  SENANG:%d%%", s_hunger, s_happiness);
+    int hudW = fbGetStringWidth(hudBuf);
+    fbDrawString((OLED_W - hudW) / 2, 2, hudBuf, C_WHITE);
 
     // 2. Banner Feedback Aksi (Muncul saat Baru Saja Diberi Makan / Dielus)
     if (s_feedback == FEEDBACK_FEED) {
@@ -224,11 +206,6 @@ void tamagotchiUpdate() {
       fbDrawHeart(22, 33, 2, C_WHITE);
       fbDrawString(30, 29, "DISAYANG! (+25)", C_WHITE);
     }
-
-    // 3. Footer Bawah Hint Kontrol (y = 54..62)
-    fbFillRect(0, 54, OLED_W, 10, C_WHITE);
-    fbHLine(0, 53, OLED_W, C_BLACK);
-    fbDrawString(4, 55, "S1:MAKAN|ELUS  S2:INFO", C_BLACK);
 
     displayFlush();
     delay(20);

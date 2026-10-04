@@ -459,12 +459,6 @@ static void updateSubmenuInbox(uint32_t now) {
       }
     }
 
-    // 4. Footer Hint
-    fbFillRect(0, 54, OLED_W, 10, C_WHITE);
-    fbHLine(0, 53, OLED_W, C_BLACK);
-    int ftW = fbGetStringWidth("SENTUH: KEMBALI");
-    fbDrawString((OLED_W - ftW) / 2, 55, "SENTUH: KEMBALI", C_BLACK);
-
     displayFlush();
     delay(20);
     return;

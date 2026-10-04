@@ -164,18 +164,14 @@ void gameUpdate() {
     putPx(65, 24, C_BLACK);
     putPx(64, 26, C_BLACK);
 
-    // Teks Petunjuk
-    int startW = fbGetStringWidth("SENTUH S1: MAIN");
-    fbDrawString((OLED_W - startW) / 2, 37, "SENTUH S1: MAIN", C_BLACK);
-
+    // Teks Petunjuk Bersih
     char hiBuf[20];
-    snprintf(hiBuf, sizeof(hiBuf), "SKOR TERTINGGI: %u", s_highScore);
+    snprintf(hiBuf, sizeof(hiBuf), "TERTINGGI: %u", s_highScore);
     int hiW = fbGetStringWidth(hiBuf);
-    fbDrawString((OLED_W - hiW) / 2, 47, hiBuf, C_BLACK);
+    fbDrawString((OLED_W - hiW) / 2, 38, hiBuf, C_BLACK);
 
-    fbHLine(6, 56, 116, C_BLACK);
-    int exitW = fbGetStringWidth("TAHAN S2: KELUAR");
-    fbDrawString((OLED_W - exitW) / 2, 57, "TAHAN S2: KELUAR", C_BLACK);
+    int startW = fbGetStringWidth("KETUK UNTUK MAIN");
+    fbDrawString((OLED_W - startW) / 2, 50, "KETUK UNTUK MAIN", C_BLACK);
 
     displayFlush();
     delay(20);
@@ -206,13 +202,13 @@ void gameUpdate() {
     snprintf(scBuf, sizeof(scBuf), "SKOR ANDA  : %u", s_score);
     fbDrawString(16, 22, scBuf, C_BLACK);
 
-    char hiBuf[24];
-    snprintf(hiBuf, sizeof(hiBuf), "TERTINGGI  : %u", s_highScore);
-    fbDrawString(16, 34, hiBuf, C_BLACK);
+    char hiBuf2[24];
+    snprintf(hiBuf2, sizeof(hiBuf2), "TERTINGGI  : %u", s_highScore);
+    fbDrawString(16, 34, hiBuf2, C_BLACK);
 
-    // Footer
-    int replayW = fbGetStringWidth("S1: ULANG | TAHAN S2: KELUAR");
-    fbDrawString((OLED_W - replayW) / 2, 54, "S1: ULANG | TAHAN S2: KELUAR", C_BLACK);
+    // Footer Bersih
+    int replayW = fbGetStringWidth("KETUK UNTUK ULANG");
+    fbDrawString((OLED_W - replayW) / 2, 53, "KETUK UNTUK ULANG", C_BLACK);
 
     displayFlush();
     delay(25);

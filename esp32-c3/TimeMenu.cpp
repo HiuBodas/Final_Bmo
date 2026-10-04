@@ -161,8 +161,8 @@ static void renderStopwatch(uint32_t now) {
     int step = (now / 200) % 3;
     fbFillCircle(56 + step * 8, 52, 2, C_BLACK);
   } else if (s_swElapsedMs > 0) {
-    int w = fbGetStringWidth("TERJEDA - S2 RESET");
-    fbDrawString((OLED_W - w) / 2, 49, "TERJEDA - S2 RESET", C_BLACK);
+    int w = fbGetStringWidth("TERJEDA");
+    fbDrawString((OLED_W - w) / 2, 49, "TERJEDA", C_BLACK);
   } else {
     int w = fbGetStringWidth("SIAP");
     fbDrawString((OLED_W - w) / 2, 49, "SIAP", C_BLACK);
@@ -221,11 +221,11 @@ static void renderTimer(uint32_t now) {
     int w = fbGetStringWidth("BERJALAN");
     fbDrawString((OLED_W - w) / 2, 49, "BERJALAN", C_BLACK);
   } else if (s_tmRemainSec < s_tmTotalSec) {
-    int w = fbGetStringWidth("TERJEDA - S2 RESET");
-    fbDrawString((OLED_W - w) / 2, 49, "TERJEDA - S2 RESET", C_BLACK);
+    int w = fbGetStringWidth("TERJEDA");
+    fbDrawString((OLED_W - w) / 2, 49, "TERJEDA", C_BLACK);
   } else {
-    int w = fbGetStringWidth("TAP S2: ATUR MENIT");
-    fbDrawString((OLED_W - w) / 2, 49, "TAP S2: ATUR MENIT", C_BLACK);
+    int w = fbGetStringWidth("SIAP");
+    fbDrawString((OLED_W - w) / 2, 49, "SIAP", C_BLACK);
   }
 
   displayFlush();
@@ -294,12 +294,11 @@ static void renderPomodoro(uint32_t now) {
     int w = fbGetStringWidth(s_pomoIsWork ? "SESI FOKUS" : "SESI ISTIRAHAT");
     fbDrawString((OLED_W - w) / 2, 55, s_pomoIsWork ? "SESI FOKUS" : "SESI ISTIRAHAT", C_BLACK);
   } else if (s_pomoRemainSec < s_pomoTotalSec) {
-    int w = fbGetStringWidth("TERJEDA - S2 RESET");
-    fbDrawString((OLED_W - w) / 2, 55, "TERJEDA - S2 RESET", C_BLACK);
+    int w = fbGetStringWidth("TERJEDA");
+    fbDrawString((OLED_W - w) / 2, 55, "TERJEDA", C_BLACK);
   } else {
-    // Saat standby sebelum mulai: petunjuk jelas cara atur menit
-    int w = fbGetStringWidth("TAP S2: ATUR MENIT");
-    fbDrawString((OLED_W - w) / 2, 55, "TAP S2: ATUR MENIT", C_BLACK);
+    int w = fbGetStringWidth("SIAP FOKUS");
+    fbDrawString((OLED_W - w) / 2, 55, "SIAP FOKUS", C_BLACK);
   }
 
   displayFlush();
