@@ -132,7 +132,7 @@ void tamagotchiUpdate() {
     g_touchPending = false;
     s_lastActivityMs = now;
 
-    if (kind == TOUCH_LONG_PRESS) {
+    if (kind == TOUCH_HOLD || kind == TOUCH_LONG_HOLD) {
       // Aksi 2: Elus / Sayang BMO (Tahan Sensor 1)
       s_happiness = min((int16_t)100, (int16_t)(s_happiness + 25));
       s_energy    = min((int16_t)100, (int16_t)(s_energy + 5));
