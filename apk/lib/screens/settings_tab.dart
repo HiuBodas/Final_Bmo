@@ -58,7 +58,7 @@ class _SettingsTabState extends State<SettingsTab> with WidgetsBindingObserver {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: BmoTheme.cardBackground,
+        backgroundColor: BmoTheme.surfaceElevated,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: BmoTheme.glassBorder),

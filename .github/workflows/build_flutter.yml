@@ -89,12 +89,12 @@ jobs:
         working-directory: ./apk
         run: flutter pub get
 
-      - name: Build iOS (No Codesign for Sideloading)
+      - name: Build iOS (No Codesign for Testing/Sideloading)
         working-directory: ./apk
-        run: flutter build ios --release --no-codesign
+        run: flutter build ios --simulator --no-codesign
 
       - name: Upload iOS Runner Artifact
         uses: actions/upload-artifact@v4
         with:
           name: BMO-Companion-iOS-Runner
-          path: ./apk/build/ios/iphoneos/Runner.app
+          path: ./apk/build/ios/iphonesimulator/Runner.app
