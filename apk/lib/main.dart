@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'services/ble_service.dart';
+import 'services/notification_service.dart';
 import 'theme/bmo_theme.dart';
 import 'screens/main_scaffold.dart';
 
@@ -18,6 +19,9 @@ void main() async {
   );
 
   await BleService().init();
+  final notifService = RealtimeNotificationService();
+  await notifService.init();
+  await notifService.startKeepAliveService();
 
   runApp(const BmoCompanionApp());
 }

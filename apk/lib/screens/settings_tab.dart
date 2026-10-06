@@ -5,6 +5,8 @@ import '../services/ble_service.dart';
 import '../theme/bmo_theme.dart';
 import '../widgets/glass_container.dart';
 
+import '../services/notification_service.dart';
+
 class SettingsTab extends StatefulWidget {
   const SettingsTab({super.key});
 
@@ -12,14 +14,124 @@ class SettingsTab extends StatefulWidget {
   State<SettingsTab> createState() => _SettingsTabState();
 }
 
-class _SettingsTabState extends State<SettingsTab> {
+class _SettingsTabState extends State<SettingsTab> with WidgetsBindingObserver {
   final BleService _ble = BleService();
+  final RealtimeNotificationService _notif = RealtimeNotificationService();
   bool _filterBmoOnly = true;
+  bool _hasNotifPermission = false;
+  bool _autoForward = true;
+  bool _filterPopular = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkPermissions();
+    _loadNotifState();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadNotifState();
+    }
+  }
+
+  void _loadNotifState() async {
+    final granted = await _notif.isListenerPermissionGranted();
+    if (mounted) {
+      setState(() {
+        _hasNotifPermission = granted;
+        _autoForward = _notif.isAutoForwardEnabled;
+        _filterPopular = _notif.filterPopularOnly;
+      });
+    }
+  }
+
+  void _showRestrictedSettingsGuide() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: BmoTheme.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: BmoTheme.glassBorder),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline, color: BmoTheme.bmoMint),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Izin Dibatasi Android?',
+                style: TextStyle(color: BmoTheme.textPrimary, fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Pada Android 13/14+, jika tombol Akses Notifikasi berwarna abu-abu (tidak bisa diklik), ikuti langkah berikut:',
+              style: TextStyle(fontSize: 13, color: BmoTheme.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            _guideStep('1', 'Tekan "Buka Info Aplikasi" di bawah.'),
+            _guideStep('2', 'Tekan tombol titik tiga (⋮) di pojok kanan atas layar HP.'),
+            _guideStep('3', 'Pilih "Izinkan setelan terbatas" (Allow restricted settings) & verifikasi PIN/sidik jari.'),
+            _guideStep('4', 'Kembali ke sini dan aktifkan kembali tombol Akses Notifikasi.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Tutup', style: TextStyle(color: BmoTheme.textMuted)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _notif.openAppDetailsSettings();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: BmoTheme.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Buka Info Aplikasi'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _guideStep(String num, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: const BoxDecoration(
+              color: BmoTheme.glassBorder,
+              shape: BoxShape.circle,
+            ),
+            child: Text(num, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: BmoTheme.bmoMint)),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: const TextStyle(fontSize: 12, color: BmoTheme.textPrimary)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _checkPermissions() async {
@@ -27,7 +139,9 @@ class _SettingsTabState extends State<SettingsTab> {
       Permission.bluetoothScan,
       Permission.bluetoothConnect,
       Permission.locationWhenInUse,
+      Permission.notification,
     ].request();
+    _loadNotifState();
   }
 
   void _toggleScan() {
@@ -137,6 +251,116 @@ class _SettingsTabState extends State<SettingsTab> {
                       ),
                     ),
                   ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Card Pengaturan Notifikasi Real-Time HP -> ESP32
+            GlassContainer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.notifications_active, color: BmoTheme.bmoMint, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Notifikasi Real-Time HP',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: BmoTheme.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _hasNotifPermission
+                              ? BmoTheme.statusOnline.withOpacity(0.15)
+                              : BmoTheme.statusOffline.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _hasNotifPermission ? 'IZIN AKTIF' : 'IZIN MATI',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: _hasNotifPermission ? BmoTheme.statusOnline : BmoTheme.statusOffline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Meneruskan pesan masuk (WhatsApp, Telegram, SMS, Panggilan, dll) secara instan ke layar BMO via BLE.',
+                    style: TextStyle(fontSize: 13, color: BmoTheme.textSecondary),
+                  ),
+                  const SizedBox(height: 12),
+
+                  if (!_hasNotifPermission) ...[
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        _notif.openListenerSettings();
+                      },
+                      icon: const Icon(Icons.security, size: 18),
+                      label: const Text('Buka Akses Notifikasi HP'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BmoTheme.primary,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(46),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: _showRestrictedSettingsGuide,
+                      icon: const Icon(Icons.help_outline, size: 16),
+                      label: const Text('Tombol Izin Abu-abu / Dibatasi? Klik Ini'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: BmoTheme.bmoMint,
+                        side: const BorderSide(color: BmoTheme.bmoMint),
+                        minimumSize: const Size.fromHeight(40),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Teruskan Otomatis ke BMO', style: TextStyle(fontSize: 14, color: BmoTheme.textPrimary)),
+                    subtitle: const Text('Kirim seketika saat HP menerima notifikasi', style: TextStyle(fontSize: 12, color: BmoTheme.textMuted)),
+                    value: _autoForward,
+                    activeColor: BmoTheme.primary,
+                    onChanged: (val) {
+                      setState(() => _autoForward = val);
+                      _notif.setAutoForward(val);
+                    },
+                  ),
+                  const Divider(color: BmoTheme.glassBorderSubtle, height: 1),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Hanya Aplikasi Populer', style: TextStyle(fontSize: 14, color: BmoTheme.textPrimary)),
+                    subtitle: const Text('Hanya WhatsApp, Telegram, IG, SMS & Telp', style: TextStyle(fontSize: 12, color: BmoTheme.textMuted)),
+                    value: _filterPopular,
+                    activeColor: BmoTheme.primary,
+                    onChanged: (val) {
+                      setState(() => _filterPopular = val);
+                      _notif.setFilterPopularOnly(val);
+                    },
+                  ),
                 ],
               ),
             ),

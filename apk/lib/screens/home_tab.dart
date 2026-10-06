@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../services/ble_service.dart';
+import '../services/notification_service.dart';
 import '../theme/bmo_theme.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/bmo_face_avatar.dart';
@@ -20,13 +21,37 @@ class HomeTab extends StatefulWidget {
   State<HomeTab> createState() => _HomeTabState();
 }
 
-class _HomeTabState extends State<HomeTab> {
+class _HomeTabState extends State<HomeTab> with WidgetsBindingObserver {
   final BleService _ble = BleService();
+  final RealtimeNotificationService _notif = RealtimeNotificationService();
   final TextEditingController _msgController = TextEditingController();
   final TextEditingController _senderController = TextEditingController(text: 'Luna');
+  bool _hasNotifPermission = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkNotifPermission();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkNotifPermission();
+    }
+  }
+
+  void _checkNotifPermission() async {
+    final granted = await _notif.isListenerPermissionGranted();
+    if (mounted) {
+      setState(() => _hasNotifPermission = granted);
+    }
+  }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _msgController.dispose();
     _senderController.dispose();
     super.dispose();
@@ -180,6 +205,49 @@ class _HomeTabState extends State<HomeTab> {
                     ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Banner Status Notifikasi Real-time
+            GestureDetector(
+              onTap: widget.onNavigateToSettings,
+              child: GlassContainer(
+                fill: _hasNotifPermission ? const Color(0x1510B981) : const Color(0x15F59E0B),
+                borderColor: _hasNotifPermission ? BmoTheme.statusOnline.withOpacity(0.3) : const Color(0x55F59E0B),
+                child: Row(
+                  children: [
+                    Icon(
+                      _hasNotifPermission ? Icons.notifications_active : Icons.notification_important,
+                      color: _hasNotifPermission ? BmoTheme.bmoMint : const Color(0xFFF59E0B),
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _hasNotifPermission ? 'Notifikasi Real-Time Aktif' : 'Akses Notifikasi Belum Aktif',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: BmoTheme.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _hasNotifPermission
+                                ? 'WhatsApp, IG, Telp & SMS diteruskan instan ke BMO'
+                                : 'Klik untuk mengaktifkan izin agar BMO menerima notifikasi HP',
+                            style: const TextStyle(fontSize: 12, color: BmoTheme.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, color: BmoTheme.textMuted, size: 20),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 16),

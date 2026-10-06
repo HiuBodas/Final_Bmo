@@ -10,12 +10,19 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
 
+    <!-- Izin Foreground Service & Notifikasi Android 13/14+ -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
 
     <application
         android:label="BMO Companion"
         android:name="${applicationName}"
         android:icon="@drawable/ic_launcher">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -33,6 +40,24 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <!-- Service Pemantau Notifikasi Sistem Android -->
+        <service
+            android:name=".BmoNotificationListener"
+            android:label="BMO Notification Listener"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- Service Latar Belakang untuk Menjaga Koneksi BLE & Pemrosesan -->
+        <service
+            android:name=".BmoForegroundService"
+            android:foregroundServiceType="connectedDevice"
+            android:exported="false" />
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
