@@ -33,12 +33,14 @@ class _HomeTabState extends State<HomeTab> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _checkNotifPermission();
+    _ble.fetchSystemAndBondedDevices(autoAttach: true);
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkNotifPermission();
+      _ble.fetchSystemAndBondedDevices(autoAttach: true);
     }
   }
 
@@ -179,7 +181,9 @@ class _HomeTabState extends State<HomeTab> with WidgetsBindingObserver {
                   Text(
                     isConnected
                         ? 'Bluetooth Low Energy aktif. BMO siap menerima perintah ekspresi dan data.'
-                        : 'Nyalakan BMO dan hubungkan via Bluetooth untuk mulai berinteraksi.',
+                        : (_ble.systemDevices.isNotEmpty
+                            ? 'BMO terdeteksi sudah terhubung di Bluetooth HP! Tekan tombol di bawah untuk menyinkronkan ke aplikasi.'
+                            : 'Nyalakan BMO dan hubungkan via Bluetooth untuk mulai berinteraksi.'),
                     style: const TextStyle(
                       fontSize: 13,
                       height: 1.4,
@@ -187,6 +191,26 @@ class _HomeTabState extends State<HomeTab> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  if (!isConnected && _ble.systemDevices.isNotEmpty) ...[
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        _ble.connect(_ble.systemDevices.first);
+                      },
+                      icon: const Icon(Icons.sync, size: 18),
+                      label: const Text('Sinkronkan BMO dari HP'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BmoTheme.bmoMint,
+                        foregroundColor: Colors.black87,
+                        elevation: 0,
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   ElevatedButton.icon(
                     onPressed: widget.onNavigateToSettings,
                     icon: Icon(
@@ -195,7 +219,7 @@ class _HomeTabState extends State<HomeTab> with WidgetsBindingObserver {
                     ),
                     label: Text(isConnected ? 'Kelola Perangkat' : 'Cari BMO Sekarang'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: BmoTheme.primary,
+                      backgroundColor: isConnected ? BmoTheme.primary : BmoTheme.surfaceElevated,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       minimumSize: const Size.fromHeight(48),

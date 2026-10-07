@@ -28,6 +28,7 @@ class _SettingsTabState extends State<SettingsTab> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _checkPermissions();
     _loadNotifState();
+    _ble.fetchSystemAndBondedDevices(autoAttach: true);
   }
 
   @override
@@ -40,6 +41,8 @@ class _SettingsTabState extends State<SettingsTab> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _loadNotifState();
+      // Saat pengguna kembali dari Pengaturan Bluetooth HP, segera cek koneksi manual
+      _ble.fetchSystemAndBondedDevices(autoAttach: true);
     }
   }
 
@@ -160,6 +163,12 @@ class _SettingsTabState extends State<SettingsTab> with WidgetsBindingObserver {
       builder: (context, _) {
         final isConnected = _ble.isConnected;
         final connectedDevice = _ble.connectedDevice;
+        final systemDevices = _ble.systemDevices.where((d) {
+          if (!_filterBmoOnly) return true;
+          final name = d.platformName.toUpperCase();
+          return name.contains('BMO') || name.contains('ESP32') || name.isEmpty;
+        }).toList();
+
         final scanResults = _ble.scanResults.where((r) {
           if (!_filterBmoOnly) return true;
           final name = (r.device.platformName.isNotEmpty
@@ -255,6 +264,119 @@ class _SettingsTabState extends State<SettingsTab> with WidgetsBindingObserver {
               ),
             ),
             const SizedBox(height: 16),
+
+            // Card Khusus Jika Ada BMO Terhubung di Pengaturan HP (Manual)
+            if (systemDevices.isNotEmpty) ...[
+              GlassContainer(
+                borderColor: BmoTheme.bmoMint.withOpacity(0.5),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.phone_android, color: BmoTheme.bmoMint, size: 20),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Koneksi Bluetooth HP (Manual)',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: BmoTheme.textPrimary,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: BmoTheme.bmoMint.withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'SISTEM HP',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: BmoTheme.bmoMint),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'BMO terdeteksi sudah terhubung atau dipasangkan lewat Pengaturan Bluetooth HP:',
+                      style: TextStyle(fontSize: 13, color: BmoTheme.textSecondary),
+                    ),
+                    const SizedBox(height: 12),
+                    ...systemDevices.map((d) {
+                      final name = d.platformName.isNotEmpty ? d.platformName : 'BMO Device';
+                      final isThisConnected = connectedDevice?.remoteId == d.remoteId;
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: BmoTheme.glassFill,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isThisConnected ? BmoTheme.statusOnline : BmoTheme.glassBorderSubtle,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        name,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, color: BmoTheme.textPrimary, fontSize: 15),
+                                      ),
+                                      if (isThisConnected) ...[
+                                        const SizedBox(width: 8),
+                                        const Icon(Icons.check_circle, size: 16, color: BmoTheme.statusOnline),
+                                      ],
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${d.remoteId.str} · Terhubung di Pengaturan HP',
+                                    style: const TextStyle(fontSize: 11, color: BmoTheme.textMuted, fontFamily: 'monospace'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (isThisConnected)
+                              const Chip(
+                                label: Text('Aktif', style: TextStyle(fontSize: 11, color: Colors.white)),
+                                backgroundColor: BmoTheme.statusOnline,
+                              )
+                            else
+                              ElevatedButton(
+                                onPressed: () {
+                                  HapticFeedback.lightImpact();
+                                  _ble.connect(d);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: BmoTheme.bmoMint,
+                                  foregroundColor: Colors.black87,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                child: const Text('Sinkronkan ke APK', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // Card Pengaturan Notifikasi Real-Time HP -> ESP32
             GlassContainer(
@@ -428,8 +550,10 @@ class _SettingsTabState extends State<SettingsTab> with WidgetsBindingObserver {
                         padding: const EdgeInsets.symmetric(vertical: 24),
                         child: Text(
                           _ble.isScanning
-                              ? 'Mencari BMO di sekitar...'
-                              : 'Tekan "Cari Perangkat BMO" untuk mulai mendeteksi.',
+                              ? 'Mencari sinyal siaran BMO di sekitar...'
+                              : (systemDevices.isNotEmpty
+                                  ? 'BMO sudah terdeteksi dari koneksi manual HP di atas.\nTekan tombol "Sinkronkan ke APK" pada kartu di atas.'
+                                  : 'Tekan "Cari Perangkat BMO" untuk mulai mendeteksi.'),
                           style: const TextStyle(fontSize: 13, color: BmoTheme.textMuted),
                           textAlign: TextAlign.center,
                         ),

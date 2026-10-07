@@ -26,10 +26,13 @@ class BleService extends ChangeNotifier {
   StreamSubscription? _connectionSub;
   StreamSubscription? _notifySub;
 
+  List<BluetoothDevice> _systemDevices = [];
+
   BluetoothDevice? get connectedDevice => _connectedDevice;
   bool get isConnected => _connectedDevice != null;
   bool get isScanning => _isScanning;
   List<ScanResult> get scanResults => _scanResults;
+  List<BluetoothDevice> get systemDevices => _systemDevices;
   List<BmoLogEntry> get logs => List.unmodifiable(_logs);
 
   Future<void> init() async {
@@ -44,6 +47,9 @@ class BleService extends ChangeNotifier {
       // Coba re-connect otomatis jika bluetooth aktif
       _tryAutoConnect(savedId);
     }
+
+    // Periksa juga apakah user sudah menghubungkan BMO secara manual di Pengaturan HP
+    await fetchSystemAndBondedDevices(autoAttach: true);
   }
 
   void _tryAutoConnect(String remoteId) async {
@@ -55,10 +61,106 @@ class BleService extends ChangeNotifier {
     }
   }
 
+  /// Memindai perangkat BMO yang sudah terhubung di level OS/Android atau di-pair manual di Bluetooth HP
+  Future<void> fetchSystemAndBondedDevices({bool autoAttach = true}) async {
+    try {
+      final state = await FlutterBluePlus.adapterState.first;
+      if (state != BluetoothAdapterState.on) {
+        return;
+      }
+    } catch (_) {}
+
+    final List<BluetoothDevice> detected = [];
+    final Set<String> seenIds = {};
+
+    void addDevice(BluetoothDevice d) {
+      if (!seenIds.contains(d.remoteId.str)) {
+        seenIds.add(d.remoteId.str);
+        detected.add(d);
+      }
+    }
+
+    // 1. Cek perangkat yang sudah terhubung di level OS/Android (systemDevices dengan Nordic UART UUID)
+    try {
+      final sysWithUuid = await FlutterBluePlus.systemDevices([serviceUuid]);
+      for (final d in sysWithUuid) {
+        addDevice(d);
+      }
+    } catch (e) {
+      debugPrint('[BLE] systemDevices with UUID notice: $e');
+    }
+
+    // 2. Cek semua perangkat yang terhubung di sistem Android (tanpa filter UUID)
+    try {
+      final allSys = await FlutterBluePlus.systemDevices([]);
+      for (final d in allSys) {
+        final name = d.platformName.toUpperCase();
+        if (name.contains('BMO') || name.contains('ESP32') || name.isEmpty) {
+          addDevice(d);
+        }
+      }
+    } catch (e) {
+      debugPrint('[BLE] all systemDevices notice: $e');
+    }
+
+    // 3. Cek perangkat yang sudah di-pair/bonding manual di Pengaturan Bluetooth HP
+    try {
+      final bonded = await FlutterBluePlus.bondedDevices;
+      for (final d in bonded) {
+        final name = d.platformName.toUpperCase();
+        if (name.contains('BMO') || name.contains('ESP32') || name.isEmpty) {
+          addDevice(d);
+        }
+      }
+    } catch (e) {
+      debugPrint('[BLE] bondedDevices notice: $e');
+    }
+
+    // 4. Cek connectedDevices dari FlutterBluePlus
+    try {
+      for (final d in FlutterBluePlus.connectedDevices) {
+        final name = d.platformName.toUpperCase();
+        if (name.contains('BMO') || name.contains('ESP32') || name.isEmpty) {
+          addDevice(d);
+        }
+      }
+    } catch (e) {
+      debugPrint('[BLE] connectedDevices notice: $e');
+    }
+
+    _systemDevices = detected;
+    notifyListeners();
+
+    // Auto-connect jika belum terhubung dan ada BMO yang sudah tersambung di sistem Android HP:
+    if (autoAttach && !isConnected && _systemDevices.isNotEmpty) {
+      BluetoothDevice? targetBmo;
+      for (final d in _systemDevices) {
+        final name = d.platformName.toUpperCase();
+        if (name.contains('BMO') || name.contains('ESP32')) {
+          targetBmo = d;
+          break;
+        }
+      }
+      targetBmo ??= _systemDevices.first;
+
+      debugPrint('[BLE] Mendeteksi BMO di sistem Bluetooth HP (${targetBmo.remoteId.str}), menyambungkan ke aplikasi...');
+      _addLog('BMO Terdeteksi di HP', 'Menghubungkan otomatis dari Bluetooth HP (${targetBmo.remoteId.str})...', true);
+      await connect(targetBmo);
+    }
+  }
+
   Future<void> startScan({Duration timeout = const Duration(seconds: 12)}) async {
     if (_isScanning) return;
     _scanResults = [];
     notifyListeners();
+
+    // Periksa terlebih dahulu perangkat yang sudah terhubung secara manual di HP
+    await fetchSystemAndBondedDevices(autoAttach: true);
+
+    if (isConnected) {
+      // Jika sudah terhubung ke BMO manual, tidak perlu memindai lagi
+      return;
+    }
 
     try {
       // Dengarkan hasil scan SEBELUM scan dimulai agar tidak ada hasil terlewat
@@ -90,7 +192,25 @@ class BleService extends ChangeNotifier {
   Future<bool> connect(BluetoothDevice device) async {
     try {
       await stopScan();
-      await device.connect(timeout: const Duration(seconds: 10), autoConnect: false);
+
+      // Periksa apakah perangkat sudah berstatus connected di level stack BLE
+      bool alreadyConnected = false;
+      try {
+        alreadyConnected = device.isConnected;
+      } catch (_) {}
+
+      if (!alreadyConnected) {
+        try {
+          await device.connect(timeout: const Duration(seconds: 10), autoConnect: false);
+        } catch (connErr) {
+          debugPrint('[BLE] device.connect info: $connErr');
+          // Jika perangkat sudah terhubung di OS Android, connect() bisa melempar pesan already connected
+          final errStr = connErr.toString().toLowerCase();
+          if (!errStr.contains('already connected') && !errStr.contains('connected')) {
+            rethrow;
+          }
+        }
+      }
 
       _connectedDevice = device;
       notifyListeners();
@@ -123,6 +243,10 @@ class BleService extends ChangeNotifier {
         }
       }
 
+      if (_rxCharacteristic == null) {
+        debugPrint('[BLE] Catatan: Karakteristik RX belum terdaftar, mencoba ulang discovery...');
+      }
+
       // Simpan device ID
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('saved_bmo_device_id', device.remoteId.str);
@@ -145,7 +269,7 @@ class BleService extends ChangeNotifier {
     } catch (e) {
       debugPrint('[BLE] Connection error: $e');
       _addLog('Gagal Terhubung', e.toString(), false);
-      // Putuskan koneksi setengah jadi agar BMO kembali advertising
+      // Jangan putuskan koneksi sistem jika kegagalan hanya internal discovery
       try {
         await device.disconnect();
       } catch (_) {}
@@ -159,11 +283,14 @@ class BleService extends ChangeNotifier {
 
   Future<void> disconnect() async {
     if (_connectedDevice != null) {
-      await _connectedDevice!.disconnect();
+      final dev = _connectedDevice!;
       _connectedDevice = null;
       _rxCharacteristic = null;
       _txCharacteristic = null;
       notifyListeners();
+      try {
+        await dev.disconnect();
+      } catch (_) {}
     }
   }
 
