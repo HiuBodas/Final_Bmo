@@ -275,7 +275,7 @@ class _WifiProvisioningTabState extends State<WifiProvisioningTab> {
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.25),
                 borderRadius: BorderRadius.circular(10),
-                border: BorderSide(color: statusColor.withOpacity(0.3)),
+                border: Border.all(color: statusColor.withOpacity(0.3)),
               ),
               child: Column(
                 children: [
