@@ -28,12 +28,19 @@ class BleService extends ChangeNotifier {
 
   List<BluetoothDevice> _systemDevices = [];
 
+  String _wifiState = 'UNKNOWN'; // 'CONNECTED', 'CONNECTING', 'DISCONNECTED', 'FAILED', 'OFF', 'UNKNOWN'
+  String? _wifiIp;
+  String? _wifiSsid;
+
   BluetoothDevice? get connectedDevice => _connectedDevice;
   bool get isConnected => _connectedDevice != null;
   bool get isScanning => _isScanning;
   List<ScanResult> get scanResults => _scanResults;
   List<BluetoothDevice> get systemDevices => _systemDevices;
   List<BmoLogEntry> get logs => List.unmodifiable(_logs);
+  String get wifiState => _wifiState;
+  String? get wifiIp => _wifiIp;
+  String? get wifiSsid => _wifiSsid;
 
   Future<void> init() async {
     FlutterBluePlus.isScanning.listen((scanning) {
@@ -253,6 +260,13 @@ class BleService extends ChangeNotifier {
 
       _addLog('Terhubung ke BMO', device.platformName.isNotEmpty ? device.platformName : 'BMO Device', true);
 
+      // Otomatis minta status Wi-Fi terbaru dari BMO saat baru terhubung
+      Future.delayed(const Duration(milliseconds: 350), () {
+        if (isConnected) {
+          requestWifiStatus();
+        }
+      });
+
       // Pantau jika terputus
       _connectionSub?.cancel();
       _connectionSub = device.connectionState.listen((state) {
@@ -260,6 +274,8 @@ class BleService extends ChangeNotifier {
           _connectedDevice = null;
           _rxCharacteristic = null;
           _txCharacteristic = null;
+          _wifiState = 'UNKNOWN';
+          _wifiIp = null;
           _addLog('Koneksi Terputus', 'BMO offline atau di luar jangkauan', false);
           notifyListeners();
         }
@@ -336,6 +352,69 @@ class BleService extends ChangeNotifier {
   void _handleIncomingDeviceMessage(String msg) {
     debugPrint('[BLE RX] Dari BMO: $msg');
     _addLog('Pesan dari BMO', msg, true);
+
+    final trimmed = msg.trim();
+    if (trimmed.startsWith('[WIFI]')) {
+      final payload = trimmed.substring(6).trim();
+      if (payload.startsWith('STATUS:')) {
+        final statusPart = payload.substring(7).trim();
+        final parts = statusPart.split('|');
+        final state = parts[0].toUpperCase();
+        _wifiState = state;
+        if (state == 'CONNECTED' && parts.length > 1) {
+          _wifiIp = parts[1].trim();
+        } else if (state == 'CONNECTING' && parts.length > 1) {
+          _wifiSsid = parts[1].trim();
+        } else if (state == 'FAILED' && parts.length > 1) {
+          _wifiSsid = parts[1].trim();
+        } else if (state == 'OFF' || state == 'DISCONNECTED') {
+          _wifiIp = null;
+        }
+      } else if (payload.startsWith('CONNECTED:')) {
+        _wifiState = 'CONNECTED';
+        _wifiIp = payload.substring(10).trim();
+      } else if (payload == 'CONNECTING' || payload == 'SAVED_CONNECTING') {
+        _wifiState = 'CONNECTING';
+      } else if (payload == 'FAILED') {
+        _wifiState = 'FAILED';
+      } else if (payload == 'DISCONNECTED') {
+        _wifiState = 'DISCONNECTED';
+        _wifiIp = null;
+      }
+      notifyListeners();
+    }
+  }
+
+  Future<bool> requestWifiStatus() {
+    return sendCommand(
+      '[WIFI] STATUS',
+      logTitle: 'Cek Wi-Fi',
+      logDetail: 'Permintaan status koneksi',
+    );
+  }
+
+  Future<bool> disconnectWifi() {
+    return sendCommand(
+      '[WIFI] DISCONNECT',
+      logTitle: 'Putuskan Wi-Fi',
+      logDetail: 'Mematikan koneksi Wi-Fi BMO',
+    );
+  }
+
+  Future<bool> setWeatherCity(String city) {
+    return sendCommand(
+      '[WEATHER] CITY:$city',
+      logTitle: 'Atur Kota Cuaca',
+      logDetail: 'Lokasi: $city',
+    );
+  }
+
+  Future<bool> sendSpotifyTrack(String title, String artist) {
+    return sendCommand(
+      '[SPOTIFY] $title|$artist',
+      logTitle: 'Spotify BMO',
+      logDetail: '$title - $artist',
+    );
   }
 
   void _addLog(String title, String message, bool isSuccess) {

@@ -126,7 +126,9 @@ int  fbGetStringWidth(const char* str, uint8_t scale = 1);
 void fbDrawLeftArrow(int x, int y, uint8_t color);
 void fbDrawRightArrow(int x, int y, uint8_t color);
 void fbDrawCheckmark(int x, int y, uint8_t color);
-
+void fbDrawWifiIcon(int x, int y, uint8_t state, uint8_t color, uint32_t now);
+void fbDrawWeatherIcon(int x, int y, uint8_t kind, uint8_t color, uint32_t now);
+void fbDrawMusicNote(int x, int y, uint8_t color);
 
 void drawFaceToBuffer(const FaceState &s, uint32_t now);
 void renderFrame(const FaceState &s, uint32_t now);

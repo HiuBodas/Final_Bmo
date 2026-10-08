@@ -8,6 +8,7 @@
 #include "Touch.h"
 #include "Moods.h"
 #include "Menu.h"
+#include "WifiManager.h"
 
 enum TamaView : uint8_t {
   TAMA_VIEW_FACE = 0,
@@ -217,6 +218,7 @@ void tamagotchiUpdate() {
   fbFillRect(0, 0, OLED_W, 13, C_BLACK);
   int titleW = fbGetStringWidth("STATUS BMO PET");
   fbDrawString((OLED_W - titleW) / 2, 3, "STATUS BMO PET", C_WHITE);
+  wifiDrawHeaderIcon(116, 2, C_WHITE);
 
   // Bar 1: Kenyang
   drawStatusBar(6, 17, 56, 8, s_hunger, "Kenyang");
@@ -236,3 +238,32 @@ void tamagotchiUpdate() {
   displayFlush();
   delay(20);
 }
+
+int16_t tamagotchiGetHunger() {
+  return s_hunger;
+}
+
+int16_t tamagotchiGetHappiness() {
+  return s_happiness;
+}
+
+int16_t tamagotchiGetEnergy() {
+  return s_energy;
+}
+
+void tamagotchiFeed() {
+  s_hunger    = min((int16_t)100, (int16_t)(s_hunger + 20));
+  s_happiness = min((int16_t)100, (int16_t)(s_happiness + 5));
+  s_feedCount++;
+  s_feedback   = FEEDBACK_FEED;
+  s_feedbackMs = millis();
+}
+
+void tamagotchiPet() {
+  s_happiness = min((int16_t)100, (int16_t)(s_happiness + 25));
+  s_energy    = min((int16_t)100, (int16_t)(s_energy + 5));
+  s_petCount++;
+  s_feedback   = FEEDBACK_PET;
+  s_feedbackMs = millis();
+}
+

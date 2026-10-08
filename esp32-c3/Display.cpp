@@ -836,3 +836,125 @@ void fbDrawCheckmark(int x, int y, uint8_t color) {
   putPx(x + 4, y,     color);
 }
 
+void fbDrawWifiIcon(int x, int y, uint8_t state, uint8_t color, uint32_t now) {
+  // state: 0 = OFF, 1 = DISCONNECTED, 2 = CONNECTING, 3 = CONNECTED, 4 = FAILED
+  if (state == 0) return;
+
+  int cx = x + 4;
+
+  // Animasi kedip (blinking) saat CONNECTING:
+  if (state == 2) {
+    if ((now / 350) % 2 == 0) {
+      putPx(cx, y + 7, color);
+      return;
+    }
+  }
+
+  // 1. Titik Dasar (Base Dot)
+  putPx(cx, y + 7, color);
+
+  // 2. Lengkung 1 (Inner Arc - Radius ~2)
+  putPx(cx - 1, y + 5, color);
+  putPx(cx,     y + 5, color);
+  putPx(cx + 1, y + 5, color);
+
+  // 3. Lengkung 2 (Middle Arc - Radius ~4)
+  putPx(cx - 3, y + 4, color);
+  putPx(cx - 2, y + 3, color);
+  putPx(cx - 1, y + 3, color);
+  putPx(cx,     y + 3, color);
+  putPx(cx + 1, y + 3, color);
+  putPx(cx + 2, y + 3, color);
+  putPx(cx + 3, y + 4, color);
+
+  // 4. Lengkung 3 (Outer Arc - Radius ~6)
+  putPx(cx - 4, y + 2, color);
+  putPx(cx - 3, y + 1, color);
+  putPx(cx - 2, y + 1, color);
+  putPx(cx - 1, y + 1, color);
+  putPx(cx,     y + 1, color);
+  putPx(cx + 1, y + 1, color);
+  putPx(cx + 2, y + 1, color);
+  putPx(cx + 3, y + 1, color);
+  putPx(cx + 4, y + 2, color);
+
+  // 5. Silang (cross) jika terputus atau gagal
+  if (state == 1 || state == 4) {
+    fbLine(cx - 3, y + 1, cx + 3, y + 7, 1, color);
+    fbLine(cx + 3, y + 1, cx - 3, y + 7, 1, color);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Ikon Cuaca Vektor Prosedural (Matahari, Awan, Hujan, Badai)
+// -----------------------------------------------------------------------------
+void fbDrawWeatherIcon(int x, int y, uint8_t kind, uint8_t color, uint32_t now) {
+  // Kotak acuan: lebar 16 x tinggi 16 px
+  if (kind == 0) {
+    // 0: MATAHARI CERAH (SUN)
+    int cx = x + 8;
+    int cy = y + 8;
+    fbFillCircle(cx, cy, 3, color);
+
+    // 4 Sinar Utama (Atas, Bawah, Kiri, Kanan)
+    fbVLine(cx, cy - 6, 2, color);
+    fbVLine(cx, cy + 5, 2, color);
+    fbHLine(cx - 6, cy, 2, color);
+    fbHLine(cx + 5, cy, 2, color);
+
+    // 4 Sinar Diagonal
+    putPx(cx - 4, cy - 4, color);
+    putPx(cx + 4, cy - 4, color);
+    putPx(cx - 4, cy + 4, color);
+    putPx(cx + 4, cy + 4, color);
+  } else if (kind == 1) {
+    // 1: AWAN MENDUNG (CLOUD)
+    fbFillCircle(x + 5,  y + 9, 3, color);
+    fbFillCircle(x + 9,  y + 6, 4, color);
+    fbFillCircle(x + 13, y + 9, 3, color);
+    fbFillRect(x + 3,    y + 9, 12, 4, color);
+  } else if (kind == 2) {
+    // 2: HUJAN (RAIN)
+    // Awan di bagian atas (sedikit dinaikkan)
+    fbFillCircle(x + 5,  y + 6, 3, color);
+    fbFillCircle(x + 9,  y + 3, 4, color);
+    fbFillCircle(x + 13, y + 6, 3, color);
+    fbFillRect(x + 3,    y + 6, 12, 3, color);
+
+    // Tetesan Air Hujan Miring Beranimasi
+    int cycle = (now / 180) % 3;
+    for (int i = 0; i < 3; ++i) {
+      int rx = x + 4 + i * 4;
+      int ry = y + 10 + ((i + cycle) % 3);
+      putPx(rx,     ry,     color);
+      putPx(rx - 1, ry + 1, color);
+    }
+  } else {
+    // 3: BADAI PETIR (THUNDER)
+    // Awan di atas
+    fbFillCircle(x + 5,  y + 5, 3, color);
+    fbFillCircle(x + 9,  y + 2, 4, color);
+    fbFillCircle(x + 13, y + 5, 3, color);
+    fbFillRect(x + 3,    y + 5, 12, 3, color);
+
+    // Kilat Petir (Zigzag)
+    int kx = x + 8;
+    int ky = y + 9;
+    fbLine(kx,     ky,     kx - 2, ky + 3, 1, color);
+    fbLine(kx - 2, ky + 3, kx + 1, ky + 3, 1, color);
+    fbLine(kx + 1, ky + 3, kx - 1, ky + 7, 1, color);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Ikon Not Musik Vektor (Spotify)
+// -----------------------------------------------------------------------------
+void fbDrawMusicNote(int x, int y, uint8_t color) {
+  fbFillCircle(x + 2, y + 6, 2, color);
+  fbVLine(x + 4, y + 1, 6, color);
+  fbHLine(x + 4, y + 1, 3, color);
+  fbVLine(x + 6, y + 2, 2, color);
+}
+
+
+

@@ -23,8 +23,13 @@ class BmoMoods {
     BmoMoodItem(id: 'sad', label: 'Sedih', emoji: '😢', bleCommand: '[BMO] MOOD:SAD'),
     BmoMoodItem(id: 'angry', label: 'Marah', emoji: '😡', bleCommand: '[BMO] MOOD:ANGRY'),
     BmoMoodItem(id: 'hungry', label: 'Lapar', emoji: '😋', bleCommand: '[BMO] MOOD:HUNGRY'),
+    BmoMoodItem(id: 'cold', label: 'Dingin', emoji: '🥶', bleCommand: '[BMO] MOOD:COLD'),
+    BmoMoodItem(id: 'hot', label: 'Kepanasan', emoji: '🥵', bleCommand: '[BMO] MOOD:HOT'),
+    BmoMoodItem(id: 'excited', label: 'Semangat', emoji: '🤩', bleCommand: '[BMO] MOOD:EXCITED'),
     BmoMoodItem(id: 'dizzy', label: 'Pusing', emoji: '😵', bleCommand: '[BMO] MOOD:DIZZY'),
     BmoMoodItem(id: 'glitch', label: 'Glitch', emoji: '🌀', bleCommand: '[BMO] MOOD:GLITCH'),
+    BmoMoodItem(id: 'confused', label: 'Bingung', emoji: '🤔', bleCommand: '[BMO] MOOD:CONFUSED'),
+    BmoMoodItem(id: 'sick', label: 'Sakit', emoji: '🤒', bleCommand: '[BMO] MOOD:SICK'),
     BmoMoodItem(id: 'idle', label: 'Normal', emoji: '😐', bleCommand: '[BMO] MOOD:IDLE'),
   ];
 

@@ -10,6 +10,11 @@
 #include "Moods.h"
 #include "Menu.h"
 #include "BleManager.h"
+#include "WifiManager.h"
+#include "NtpClock.h"
+#include "WeatherManager.h"
+#include "SpotifyWidget.h"
+#include "WebDashboard.h"
 
 // -----------------------------------------------------------------------------
 // Pilihan Mode Idle Wajah BMO (saat tidak di Menu & tidak Terkunci):
@@ -45,6 +50,14 @@ void setup() {
   menuInit();
   Serial.println("[init] Menu system ready (BLE OFF, nyalakan manual via menu).");
 
+  // 4. Inisialisasi Modul Jaringan & Layanan Produktivitas (Seksi 1 & 2)
+  ntpInit();
+  weatherInit();
+  spotifyInit();
+  webDashboardInit();
+  wifiInit();
+  Serial.println("[init] Wi-Fi manager & Network Services initialized.");
+
   randomSeed(analogRead(0) + micros());
   if (menuIsMochiEngineEnabled()) {
     Serial.println("[init] Personality Engine active.");
@@ -54,7 +67,16 @@ void setup() {
 }
 
 void loop() {
-  // 1. Prioritas Utama: Interupsi Layar Notifikasi BLE Real-time
+  // 0. Prioritas Layanan Web Dashboard Lokal (http://bmo.local)
+  webDashboardHandle();
+
+  // 1. Interupsi Layar Widget Spotify Now Playing
+  if (spotifyIsActive()) {
+    spotifyUpdate();
+    return;
+  }
+
+  // 2. Prioritas Layar Notifikasi BLE Real-time
   if (bleNotifIsActive()) {
     bleNotifUpdate();
     return;

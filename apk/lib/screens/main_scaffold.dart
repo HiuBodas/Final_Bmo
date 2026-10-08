@@ -23,6 +23,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       HomeTab(
         onNavigateToSettings: () => setState(() => _currentIndex = 3),
         onNavigateToSimulator: () => setState(() => _currentIndex = 1),
+        onNavigateToWifi: () => setState(() => _currentIndex = 2),
       ),
       const SimulatorTab(),
       const WifiProvisioningTab(),

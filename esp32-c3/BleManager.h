@@ -40,10 +40,12 @@ void bleNotifDismiss();
 void bleNotifUpdate();
 void parseIncomingBleMessage(const String& raw);
 
-// Triggers Ekspresi & Sentuhan dari APK (Thread-safe antar Core)
+// Triggers Ekspresi & Sentuhan dari APK / Web Dashboard (Thread-safe antar Core)
 bool bleHasPendingAction();
 bool bleHasPendingMood(Mood &m);
 bool bleHasPendingReaction(TouchKind &k);
+void bleTriggerMood(Mood m);
+void blePushNotification(const char* app, const char* sender, const char* body);
 
 // Menu Sub-Halaman BLE
 void bleMenuOpen();

@@ -10,11 +10,13 @@ import '../widgets/bmo_face_avatar.dart';
 class HomeTab extends StatefulWidget {
   final VoidCallback onNavigateToSettings;
   final VoidCallback onNavigateToSimulator;
+  final VoidCallback onNavigateToWifi;
 
   const HomeTab({
     super.key,
     required this.onNavigateToSettings,
     required this.onNavigateToSimulator,
+    required this.onNavigateToWifi,
   });
 
   @override
@@ -232,6 +234,75 @@ class _HomeTabState extends State<HomeTab> with WidgetsBindingObserver {
               ),
             ),
             const SizedBox(height: 16),
+
+            // Quick Banner Status Wi-Fi (Jika BLE Terhubung)
+            if (isConnected) ...[
+              GestureDetector(
+                onTap: widget.onNavigateToWifi,
+                child: GlassContainer(
+                  fill: _ble.wifiState == 'CONNECTED'
+                      ? const Color(0x1810B981)
+                      : (_ble.wifiState == 'CONNECTING'
+                          ? const Color(0x18F59E0B)
+                          : const Color(0x153B82F6)),
+                  borderColor: _ble.wifiState == 'CONNECTED'
+                      ? BmoTheme.statusOnline.withOpacity(0.35)
+                      : (_ble.wifiState == 'CONNECTING'
+                          ? const Color(0x55F59E0B)
+                          : BmoTheme.primaryLight.withOpacity(0.3)),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _ble.wifiState == 'CONNECTED'
+                            ? Icons.wifi_rounded
+                            : (_ble.wifiState == 'CONNECTING'
+                                ? Icons.wifi_find_rounded
+                                : Icons.wifi_off_rounded),
+                        color: _ble.wifiState == 'CONNECTED'
+                            ? BmoTheme.statusOnline
+                            : (_ble.wifiState == 'CONNECTING'
+                                ? const Color(0xFFF59E0B)
+                                : BmoTheme.bmoMint),
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _ble.wifiState == 'CONNECTED'
+                                  ? 'Wi-Fi BMO Terhubung'
+                                  : (_ble.wifiState == 'CONNECTING'
+                                      ? 'Menyambung ke Wi-Fi...'
+                                      : 'Wi-Fi BMO Belum Aktif'),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: BmoTheme.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _ble.wifiState == 'CONNECTED'
+                                  ? (_ble.wifiIp != null
+                                      ? 'IP: ${_ble.wifiIp} · Web: http://bmo.local'
+                                      : 'Web Dashboard: http://bmo.local')
+                                  : 'Ketuk untuk hubungkan Wi-Fi, NTP & Cuaca',
+                              style: const TextStyle(fontSize: 12, color: BmoTheme.textSecondary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: BmoTheme.textMuted, size: 20),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // Banner Status Notifikasi Real-time
             GestureDetector(

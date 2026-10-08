@@ -7,6 +7,9 @@
 #include "Touch.h"
 #include "Menu.h"
 #include "Moods.h"
+#include "WifiManager.h"
+#include "WeatherManager.h"
+#include "SpotifyWidget.h"
 
 #include <BLEDevice.h>
 #include <BLEServer.h>
@@ -259,6 +262,29 @@ bool bleHasPendingReaction(TouchKind &k) {
   return false;
 }
 
+void bleTriggerMood(Mood m) {
+  s_pendingBleMood = (int16_t)m;
+}
+
+void blePushNotification(const char* app, const char* sender, const char* body) {
+  snprintf(s_currentNotif.app, sizeof(s_currentNotif.app), "%s", app ? app : "MEMO");
+  snprintf(s_currentNotif.sender, sizeof(s_currentNotif.sender), "%s", sender ? sender : "PC");
+  snprintf(s_currentNotif.body, sizeof(s_currentNotif.body), "%s", body ? body : "");
+  s_currentNotif.receivedMs = millis();
+  s_currentNotif.valid = true;
+
+  for (int i = BLE_INBOX_CAPACITY - 1; i > 0; --i) {
+    s_inbox[i] = s_inbox[i - 1];
+  }
+  s_inbox[0] = s_currentNotif;
+  if (s_inboxCount < BLE_INBOX_CAPACITY) s_inboxCount++;
+
+  g_touchPending = false;
+  g_navPending = false;
+  s_notifStartMs = millis();
+  s_notifActive = true;
+}
+
 // Membersihkan karakter non-ASCII, byte emoji, atau kode kontrol aneh agar font OLED bersih
 static String cleanBleText(const String& in) {
   String out = "";
@@ -309,14 +335,25 @@ void parseIncomingBleMessage(const String& raw) {
         else if (mName == "WINK") s_pendingBleMood = (int16_t)MOOD_WINK;
         else if (mName == "LAUGH") s_pendingBleMood = (int16_t)MOOD_LAUGH;
         else if (mName == "TALK") s_pendingBleMood = (int16_t)MOOD_TALK;
+        else if (mName == "LISTEN") s_pendingBleMood = (int16_t)MOOD_LISTEN;
         else if (mName == "FOCUSED") s_pendingBleMood = (int16_t)MOOD_FOCUSED;
+        else if (mName == "THINKING") s_pendingBleMood = (int16_t)MOOD_THINKING;
+        else if (mName == "EXCITED") s_pendingBleMood = (int16_t)MOOD_EXCITED;
         else if (mName == "ANGRY") s_pendingBleMood = (int16_t)MOOD_ANGRY;
         else if (mName == "SAD") s_pendingBleMood = (int16_t)MOOD_SAD;
         else if (mName == "SURPRISE") s_pendingBleMood = (int16_t)MOOD_SURPRISE;
         else if (mName == "SLEEPY") s_pendingBleMood = (int16_t)MOOD_SLEEPY;
         else if (mName == "HUNGRY") s_pendingBleMood = (int16_t)MOOD_HUNGRY;
+        else if (mName == "COLD") s_pendingBleMood = (int16_t)MOOD_COLD;
+        else if (mName == "HOT") s_pendingBleMood = (int16_t)MOOD_HOT;
+        else if (mName == "SICK") s_pendingBleMood = (int16_t)MOOD_SICK;
         else if (mName == "DIZZY") s_pendingBleMood = (int16_t)MOOD_DIZZY;
         else if (mName == "GLITCH") s_pendingBleMood = (int16_t)MOOD_GLITCH;
+        else if (mName == "CONFUSED") s_pendingBleMood = (int16_t)MOOD_CONFUSED;
+        else if (mName == "BORED") s_pendingBleMood = (int16_t)MOOD_BORED;
+        else if (mName == "SCARED") s_pendingBleMood = (int16_t)MOOD_SCARED;
+        else if (mName == "WAKE") s_pendingBleMood = (int16_t)MOOD_WAKE;
+        else if (mName == "BLINK") s_pendingBleMood = (int16_t)MOOD_BLINK;
         else s_pendingBleMood = (int16_t)MOOD_HAPPY;
         return;
       } else if (content.startsWith("TOUCH:")) {
@@ -338,13 +375,85 @@ void parseIncomingBleMessage(const String& raw) {
       sender  = "SINKRON HP";
       body    = content;
     }
-    // C. Perintah Pengaturan Wi-Fi: [WIFI] SSID:PASS|URL
+    // C. Perintah Pengaturan Wi-Fi: [WIFI] SSID:PASS|URL, [WIFI] STATUS, [WIFI] DISCONNECT
     else if (tag == "WIFI") {
-      appName = "WIFI SETUP";
-      sender  = "PENGATURAN";
-      body    = content;
+      if (content.equalsIgnoreCase("STATUS")) {
+        wifiSendBleStatus();
+        return;
+      }
+      if (content.equalsIgnoreCase("DISCONNECT")) {
+        wifiDisconnect();
+        bleSend("[WIFI] DISCONNECTED");
+        return;
+      }
+
+      int colonIdx = content.indexOf(':');
+      if (colonIdx != -1) {
+        String ssid = content.substring(0, colonIdx);
+        String rem  = content.substring(colonIdx + 1);
+        String pass = "";
+        String url  = "";
+
+        int pipeIdx = rem.indexOf('|');
+        if (pipeIdx != -1) {
+          pass = rem.substring(0, pipeIdx);
+          url  = rem.substring(pipeIdx + 1);
+        } else {
+          pass = rem;
+        }
+
+        ssid.trim();
+        pass.trim();
+        url.trim();
+
+        if (ssid.length() > 0) {
+          wifiSaveCredentials(ssid, pass, url);
+          bleSend("[WIFI] CONNECTING");
+          appName = "WI-FI";
+          sender  = ssid;
+          body    = "Menghubungkan...";
+        } else {
+          return;
+        }
+      } else {
+        appName = "WI-FI";
+        sender  = "INFO";
+        body    = content;
+      }
     }
-    // D. Pesan Notifikasi Aplikasi (WhatsApp, SMS, dsb)
+    // D. Pengaturan Kota Cuaca: [WEATHER] CITY:Jakarta atau [WEATHER] Jakarta
+    else if (tag == "WEATHER") {
+      String city = content;
+      if (city.startsWith("CITY:")) city = city.substring(5);
+      city.trim();
+      if (city.length() > 0) {
+        weatherSetCity(city);
+        weatherUpdate();
+        bleSend("[WEATHER] OK:" + city);
+        appName = "CUACA";
+        sender  = "KOTA";
+        body    = city;
+      }
+    }
+    // E. Pengaturan Lagu Spotify: [SPOTIFY] Judul|Artis
+    else if (tag == "SPOTIFY") {
+      String title = content;
+      String artist = "Musik";
+      int pipeIdx = content.indexOf('|');
+      if (pipeIdx != -1) {
+        title  = content.substring(0, pipeIdx);
+        artist = content.substring(pipeIdx + 1);
+      }
+      title.trim();
+      artist.trim();
+      if (title.length() > 0) {
+        spotifySetTrack(title, artist);
+        spotifyOpen();
+        bleSend("[SPOTIFY] OK");
+        return;
+      }
+    }
+    // F. Pesan Notifikasi Aplikasi (WhatsApp, SMS, dsb)
     else {
       appName = tag;
       int colonIdx = content.indexOf(':');
@@ -418,6 +527,12 @@ void bleNotifDismiss() {
 // Gambar Ikon Vektor Prosedural Notifikasi
 // -----------------------------------------------------------------------------
 static void drawVectorNotificationIcon(int x, int y, const char* app, uint8_t color) {
+  // 0. Ikon Wi-Fi (Setup / Notifikasi Jaringan)
+  if (strstr(app, "WI") || strstr(app, "WIFI")) {
+    fbDrawWifiIcon(x, y, 3, color, millis());
+    return;
+  }
+
   // 1. Ikon Chat Bubble (WhatsApp / Telegram / SMS)
   if (strstr(app, "WA") || strstr(app, "WHAT") || strstr(app, "CHAT") || strstr(app, "TELE") || strstr(app, "SMS")) {
     fbFillRoundRect(x, y + 1, 11, 8, 2, color);
@@ -750,6 +865,7 @@ void bleMenuUpdate() {
                        : (s_bleActive ? "BLE: AKTIF" : "BLE: MATI");
   int titleW = fbGetStringWidth(titleTxt);
   fbDrawString((OLED_W - titleW) / 2, 3, titleTxt, C_WHITE);
+  wifiDrawHeaderIcon(116, 2, C_WHITE);
 
   const char* bleItems[] = {
     "SAMBUNG ANDROID",

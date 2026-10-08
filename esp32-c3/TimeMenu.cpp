@@ -5,10 +5,15 @@
 #include "TimeMenu.h"
 #include "Display.h"
 #include "Touch.h"
+#include "WifiManager.h"
+#include "NtpClock.h"
+#include "WeatherManager.h"
+#include "SpotifyWidget.h"
 
 static bool         s_timeActive      = false;
 static TimeSubState s_subState        = TIME_SUB_MENU;
 static int          s_timeMenuIdx     = 0;
+static int          s_timeTopIdx      = 0;
 static uint32_t     s_lastActivityMs  = 0;
 
 // -----------------------------------------------------------------------------
@@ -87,8 +92,18 @@ void timeMenuClose() {
 }
 
 // -----------------------------------------------------------------------------
-// Render Halaman Submenu Pilihan TIME (1. Stopwatch, 2. Timer, 3. Pomodoro)
+// Render Halaman Submenu Pilihan TIME (1. Jam & Cuaca, 2. Spotify, 3. Stopwatch, 4. Timer, 5. Pomodoro, 6. Kembali)
 // -----------------------------------------------------------------------------
+static const char* const s_timeMenuItems[] = {
+  "JAM & CUACA",
+  "SPOTIFY NOW",
+  "STOPWATCH",
+  "HITUNG MUNDUR",
+  "POMODORO",
+  "KEMBALI"
+};
+static const int TIME_ITEM_COUNT = 6;
+
 static void renderTimeSubMenu() {
   displayClear();
 
@@ -96,26 +111,88 @@ static void renderTimeSubMenu() {
   fbFillRect(0, 0, OLED_W, 13, C_BLACK);
   int titleW = fbGetStringWidth("WAKTU & TIMER");
   fbDrawString((OLED_W - titleW) / 2, 3, "WAKTU & TIMER", C_WHITE);
+  wifiDrawHeaderIcon(116, 2, C_WHITE);
 
-  static const char* const menuItems[] = {
-    "STOPWATCH",
-    "HITUNG MUNDUR",
-    "POMODORO",
-    "KEMBALI"
-  };
+  // Viewport scrolling 4 item
+  if (s_timeMenuIdx >= s_timeTopIdx + 4) {
+    s_timeTopIdx = s_timeMenuIdx - 3;
+  } else if (s_timeMenuIdx < s_timeTopIdx) {
+    s_timeTopIdx = s_timeMenuIdx;
+  }
 
   for (int i = 0; i < 4; ++i) {
+    int itemIdx = s_timeTopIdx + i;
+    if (itemIdx >= TIME_ITEM_COUNT) break;
+
     int y = 16 + i * 11;
-    if (i == s_timeMenuIdx) {
-      fbFillRoundRect(6, y, 116, 11, 2, C_BLACK);
-      fbDrawRightArrow(12, y + 3, C_WHITE);
-      fbDrawString(22, y + 2, menuItems[i], C_WHITE);
+    if (itemIdx == s_timeMenuIdx) {
+      fbFillRoundRect(6, y, 114, 11, 2, C_BLACK);
+      fbDrawRightArrow(10, y + 3, C_WHITE);
+      fbDrawString(20, y + 2, s_timeMenuItems[itemIdx], C_WHITE);
     } else {
-      fbDrawString(22, y + 2, menuItems[i], C_BLACK);
+      fbDrawString(20, y + 2, s_timeMenuItems[itemIdx], C_BLACK);
     }
   }
 
+  // Scrollbar vertikal
+  fbVLine(123, 16, 44, C_BLACK);
+  int thumbH = 8;
+  int thumbY = 16 + (s_timeMenuIdx * (44 - thumbH)) / (TIME_ITEM_COUNT - 1);
+  fbFillRect(121, thumbY, 3, thumbH, C_BLACK);
+
   displayFlush();
+}
+
+// -----------------------------------------------------------------------------
+// Render Jam Internet Otomatis (NTP) & Cuaca HUD (Seksi 2.1 & 2.2)
+// -----------------------------------------------------------------------------
+static void renderClockAndWeather(uint32_t now) {
+  // Sentuhan Sensor 1 atau Sensor 2 kembali ke menu
+  if (g_touchPending || g_navPending) {
+    g_touchPending = false;
+    g_navPending   = false;
+    s_subState     = TIME_SUB_MENU;
+    s_lastActivityMs = now;
+    return;
+  }
+
+  displayClear();
+
+  // 1. Header Bar Hitam (0..13)
+  fbFillRect(0, 0, OLED_W, 13, C_BLACK);
+  int titleW = fbGetStringWidth("JAM & CUACA");
+  fbDrawString((OLED_W - titleW) / 2, 3, "JAM & CUACA", C_WHITE);
+  wifiDrawHeaderIcon(116, 2, C_WHITE);
+
+  // 2. Jam Digital Besar (Scale 2)
+  String timeStr = ntpGetTimeStr();
+  int tW = fbGetStringWidth(timeStr.c_str(), 2);
+  fbDrawString((OLED_W - tW) / 2, 17, timeStr.c_str(), C_BLACK, 255, 2);
+
+  // 3. Hari & Tanggal
+  String dateStr = ntpGetDayStr() + ", " + ntpGetDateStr();
+  int dW = fbGetStringWidth(dateStr.c_str(), 1);
+  fbDrawString((OLED_W - dW) / 2, 35, dateStr.c_str(), C_BLACK);
+
+  // 4. Garis Pemisah Tipis
+  fbHLine(8, 45, 112, C_BLACK);
+
+  // 5. Cuaca & Suhu HUD
+  if (weatherHasData()) {
+    // Ikon Cuaca Vektor Animasi di x=10, y=47
+    fbDrawWeatherIcon(10, 47, (uint8_t)weatherGetKind(), C_BLACK, now);
+
+    char wBuf[32];
+    snprintf(wBuf, sizeof(wBuf), "%d^C | %s (%d%%)", weatherGetTemp(), weatherGetCondition().c_str(), weatherGetHumidity());
+    fbDrawString(30, 51, wBuf, C_BLACK);
+  } else {
+    const char* info = wifiIsConnected() ? "SINKRON CUACA..." : "OFFLINE (BUTUH WIFI)";
+    int w = fbGetStringWidth(info);
+    fbDrawString((OLED_W - w) / 2, 51, info, C_BLACK);
+  }
+
+  displayFlush();
+  delay(20);
 }
 
 // -----------------------------------------------------------------------------
@@ -193,6 +270,7 @@ static void renderTimer(uint32_t now) {
   fbFillRect(0, 0, OLED_W, 13, C_BLACK);
   int titleW = fbGetStringWidth("HITUNG MUNDUR");
   fbDrawString((OLED_W - titleW) / 2, 3, "HITUNG MUNDUR", C_WHITE);
+  wifiDrawHeaderIcon(116, 2, C_WHITE);
 
   // Format Hitung Mundur Besar: MM:SS
   uint32_t m = s_tmRemainSec / 60;
@@ -321,7 +399,7 @@ void timeMenuUpdate() {
       g_navPending = false;
 
       if (ev == NAV_TAP) {
-        s_timeMenuIdx = (s_timeMenuIdx + 1) % 4;
+        s_timeMenuIdx = (s_timeMenuIdx + 1) % TIME_ITEM_COUNT;
         s_lastActivityMs = now;
       } else if (ev == NAV_HOLD || ev == NAV_DOUBLE_TAP) {
         timeMenuClose();
@@ -335,15 +413,20 @@ void timeMenuUpdate() {
       s_lastActivityMs = now;
 
       if (s_timeMenuIdx == 0) {
+        s_subState = TIME_SUB_CLOCK;
+      } else if (s_timeMenuIdx == 1) {
+        s_subState = TIME_SUB_SPOTIFY;
+        spotifyOpen();
+      } else if (s_timeMenuIdx == 2) {
         s_subState    = TIME_SUB_STOPWATCH;
         s_swRunning   = false;
         s_swElapsedMs = 0;
-      } else if (s_timeMenuIdx == 1) {
+      } else if (s_timeMenuIdx == 3) {
         s_subState      = TIME_SUB_TIMER;
         s_tmRunning     = false;
         s_tmAlarm       = false;
         s_tmRemainSec   = s_tmTotalSec;
-      } else if (s_timeMenuIdx == 2) {
+      } else if (s_timeMenuIdx == 4) {
         s_subState       = TIME_SUB_POMODORO;
         s_pomoRunning    = false;
         s_pomoAlarm      = false;
@@ -364,6 +447,27 @@ void timeMenuUpdate() {
 
     renderTimeSubMenu();
     delay(20);
+    return;
+  }
+
+  // ===========================================================================
+  // SUB-MODE: JAM & CUACA HUD (Seksi 2.1 & 2.2)
+  // ===========================================================================
+  if (s_subState == TIME_SUB_CLOCK) {
+    renderClockAndWeather(now);
+    return;
+  }
+
+  // ===========================================================================
+  // SUB-MODE: SPOTIFY "NOW PLAYING" (Seksi 2.4)
+  // ===========================================================================
+  if (s_subState == TIME_SUB_SPOTIFY) {
+    if (!spotifyIsActive()) {
+      s_subState = TIME_SUB_MENU;
+      s_lastActivityMs = now;
+      return;
+    }
+    spotifyUpdate();
     return;
   }
 
@@ -497,4 +601,40 @@ void timeMenuUpdate() {
     delay(25);
     return;
   }
+}
+
+// -----------------------------------------------------------------------------
+// Kontrol Pomodoro Jarak Jauh (Web Dashboard / API)
+// -----------------------------------------------------------------------------
+void timeMenuStartPomodoro() {
+  s_pomoRunning = true;
+  s_pomoLastTickMs = millis();
+}
+
+void timeMenuPausePomodoro() {
+  s_pomoRunning = false;
+}
+
+void timeMenuResetPomodoro() {
+  s_pomoRunning = false;
+  s_pomoIsWork = true;
+  s_pomoCycle = 1;
+  s_pomoTotalSec = s_pomoPresets[s_pomoPresetIdx] * 60;
+  s_pomoRemainSec = s_pomoTotalSec;
+}
+
+bool timeMenuIsPomodoroRunning() {
+  return s_pomoRunning;
+}
+
+uint32_t timeMenuGetPomodoroRemain() {
+  return s_pomoRemainSec;
+}
+
+bool timeMenuIsPomodoroWork() {
+  return s_pomoIsWork;
+}
+
+uint8_t timeMenuGetPomodoroCycle() {
+  return s_pomoCycle;
 }

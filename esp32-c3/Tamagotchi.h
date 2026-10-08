@@ -11,3 +11,9 @@ void tamagotchiOpen();
 void tamagotchiClose();
 bool tamagotchiIsActive();
 void tamagotchiUpdate();
+
+int16_t tamagotchiGetHunger();
+int16_t tamagotchiGetHappiness();
+int16_t tamagotchiGetEnergy();
+void tamagotchiFeed();
+void tamagotchiPet();

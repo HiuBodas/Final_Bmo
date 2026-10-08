@@ -11,6 +11,7 @@
 #include "Tamagotchi.h"
 #include "Game.h"
 #include "BleManager.h"
+#include "WifiManager.h"
 #include "Display.h"
 #include "Touch.h"
 #include <Preferences.h>
@@ -275,6 +276,7 @@ static void updateMainMenu(uint32_t now) {
   fbFillRect(0, 0, OLED_W, 13, C_BLACK);
   int titleW = fbGetStringWidth("MENU UTAMA");
   fbDrawString((OLED_W - titleW) / 2, 3, "MENU UTAMA", C_WHITE);
+  wifiDrawHeaderIcon(116, 2, C_WHITE);
 
   // Render 4 Item dalam Jendela Viewport
   for (int i = 0; i < 4; ++i) {
@@ -352,6 +354,7 @@ static void updateSubmenuEkspresi(uint32_t now) {
   fbFillRect(0, 0, OLED_W, 13, C_BLACK);
   int titleW = fbGetStringWidth("PILIH EKSPRESI");
   fbDrawString((OLED_W - titleW) / 2, 3, "PILIH EKSPRESI", C_WHITE);
+  wifiDrawHeaderIcon(116, 2, C_WHITE);
 
   for (int i = 0; i < 4; ++i) {
     int itemIdx = s_moodTopIdx + i;
@@ -489,6 +492,7 @@ static void updateSubmenuInbox(uint32_t now) {
     fbFillRect(0, 0, OLED_W, 13, C_BLACK);
     int tW = fbGetStringWidth("RIWAYAT NOTIF (0)");
     fbDrawString((OLED_W - tW) / 2, 3, "RIWAYAT NOTIF (0)", C_WHITE);
+    wifiDrawHeaderIcon(116, 2, C_WHITE);
 
     // Pesan Informasi
     int w1 = fbGetStringWidth("Belum ada notifikasi");
@@ -564,6 +568,7 @@ static void updateSubmenuInbox(uint32_t now) {
   snprintf(titleBuf, sizeof(titleBuf), "RIWAYAT NOTIF (%d)", count);
   int tW = fbGetStringWidth(titleBuf);
   fbDrawString((OLED_W - tW) / 2, 3, titleBuf, C_WHITE);
+  wifiDrawHeaderIcon(116, 2, C_WHITE);
 
   // Render Item dalam Viewport
   for (int i = 0; i < 4; ++i) {
@@ -677,6 +682,7 @@ static void updateSubmenuSettings(uint32_t now) {
   fbFillRect(0, 0, OLED_W, 13, C_BLACK);
   int tW = fbGetStringWidth("PENGATURAN BMO");
   fbDrawString((OLED_W - tW) / 2, 3, "PENGATURAN BMO", C_WHITE);
+  wifiDrawHeaderIcon(116, 2, C_WHITE);
 
   // Label opsi-opsi
   char opt0[24];

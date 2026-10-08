@@ -7,10 +7,12 @@
 #include <Arduino.h>
 
 enum TimeSubState : uint8_t {
-  TIME_SUB_MENU = 0,    // Submenu pilihan: 1. Stopwatch, 2. Timer, 3. Pomodoro, 4. Kembali
+  TIME_SUB_MENU = 0,    // Submenu pilihan
+  TIME_SUB_CLOCK,       // Jam Digital NTP & Cuaca HUD (Seksi 2.1 & 2.2)
+  TIME_SUB_SPOTIFY,     // Spotify Now Playing Widget (Seksi 2.4)
   TIME_SUB_STOPWATCH,   // Fitur Stopwatch (Start / Pause / Reset)
-  TIME_SUB_TIMER,       // Fitur Countdown Timer (Preset 1, 3, 5, 10, 15, 25 min)
-  TIME_SUB_POMODORO     // Fitur Podomoro (25 min Fokus, 5 min Istirahat)
+  TIME_SUB_TIMER,       // Fitur Countdown Timer
+  TIME_SUB_POMODORO     // Fitur Podomoro (Fokus / Istirahat)
 };
 
 void timeMenuInit();
@@ -19,3 +21,12 @@ void timeMenuClose();
 bool timeMenuIsActive();
 void timeMenuUpdate();
 TimeSubState timeMenuGetSubState();
+
+// Kontrol Pomodoro Jarak Jauh (Web Dashboard & API)
+void     timeMenuStartPomodoro();
+void     timeMenuPausePomodoro();
+void     timeMenuResetPomodoro();
+bool     timeMenuIsPomodoroRunning();
+uint32_t timeMenuGetPomodoroRemain();
+bool     timeMenuIsPomodoroWork();
+uint8_t  timeMenuGetPomodoroCycle();
