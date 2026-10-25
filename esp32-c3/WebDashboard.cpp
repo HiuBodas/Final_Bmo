@@ -12,6 +12,8 @@
 #include "TimeMenu.h"
 #include "BleManager.h"
 #include "Moods.h"
+#include "Display.h"
+#include <Preferences.h>
 
 #include <WebServer.h>
 #include <ESPmDNS.h>
@@ -124,7 +126,10 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
         <div class="stat-desc" id="hdrSub">http://bmo.local</div>
       </div>
     </div>
-    <div class="badge" id="wifiBadge">ONLINE</div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button onclick="toggleTheme()" style="padding:6px 12px; font-size:12px; background:var(--surface-elev); color:var(--text); border:1px solid var(--border); border-radius:8px; cursor:pointer;">&#127763; Tema Layar</button>
+      <div class="badge" id="wifiBadge">ONLINE</div>
+    </div>
   </header>
 
   <!-- Baris Info Cepat -->
@@ -285,6 +290,15 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
 
     setInterval(fetchStatus, 3000);
     fetchStatus();
+
+    async function toggleTheme() {
+      try {
+        const cur = await fetch('/api/theme').then(r => r.text());
+        const next = cur === 'DARK' ? '0' : '1';
+        await fetch('/api/theme?dark=' + next, { method: 'POST' });
+        showToast('Tema layar diubah ke ' + (next === '1' ? 'GELAP' : 'TERANG'));
+      } catch (_) {}
+    }
   </script>
 </body>
 </html>
@@ -427,6 +441,20 @@ static void handleApiTamagotchi() {
   s_server.send(400, "text/plain", "Missing action");
 }
 
+static void handleApiTheme() {
+  if (s_server.hasArg("dark")) {
+    bool dark = (s_server.arg("dark") == "1" || s_server.arg("dark") == "true");
+    displaySetDarkMode(dark);
+    Preferences prefs;
+    prefs.begin("bmo_cfg", false);
+    prefs.putBool("dark", dark);
+    prefs.end();
+    s_server.send(200, "text/plain", dark ? "DARK" : "LIGHT");
+    return;
+  }
+  s_server.send(200, "text/plain", displayIsDarkMode() ? "DARK" : "LIGHT");
+}
+
 // -----------------------------------------------------------------------------
 // Inisialisasi & Pengaturan Server
 // -----------------------------------------------------------------------------
@@ -451,6 +479,7 @@ void webDashboardStart() {
   s_server.on("/api/pomodoro", HTTP_POST, handleApiPomodoro);
   s_server.on("/api/nowplaying", HTTP_POST, handleApiNowPlaying);
   s_server.on("/api/tamagotchi", HTTP_POST, handleApiTamagotchi);
+  s_server.on("/api/theme", HTTP_ANY, handleApiTheme);
 
   s_server.begin();
   s_serverRunning = true;

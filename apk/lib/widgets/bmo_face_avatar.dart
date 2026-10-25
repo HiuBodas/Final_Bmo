@@ -15,60 +15,68 @@ class BmoFaceAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: width,
       height: height,
-      decoration: BoxDecoration(
-        color: const Color(0xFFCDE5D8), // Authentic BMO Screen Mint
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFF8BAE9D),
-          width: 3,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: BmoTheme.bmoMint.withOpacity(0.25),
-            blurRadius: 16,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Stack(
+      child: FittedBox(
+        fit: BoxFit.contain,
         alignment: Alignment.center,
-        children: [
-          // Cheeks (Blush)
-          if (mood == 'love' || mood == 'happy' || mood == 'hold' || mood == 'wink') ...[
-            const Positioned(
-              left: 20,
-              bottom: 30,
-              child: _BlushDot(),
+        child: Container(
+          width: 160,
+          height: 120,
+          decoration: BoxDecoration(
+            color: const Color(0xFFCDE5D8), // Authentic BMO Screen Mint
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: const Color(0xFF8BAE9D),
+              width: 3,
             ),
-            const Positioned(
-              right: 20,
-              bottom: 30,
-              child: _BlushDot(),
-            ),
-          ],
-
-          // Eyes
-          Positioned(
-            top: height * 0.32,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildEye(true),
-                const SizedBox(width: 44),
-                _buildEye(false),
+            boxShadow: [
+              BoxShadow(
+                color: BmoTheme.bmoMint.withOpacity(0.25),
+                blurRadius: 16,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Cheeks (Blush)
+              if (mood == 'love' || mood == 'happy' || mood == 'hold' || mood == 'wink') ...[
+                const Positioned(
+                  left: 20,
+                  bottom: 30,
+                  child: _BlushDot(),
+                ),
+                const Positioned(
+                  right: 20,
+                  bottom: 30,
+                  child: _BlushDot(),
+                ),
               ],
-            ),
-          ),
 
-          // Mouth
-          Positioned(
-            bottom: height * 0.22,
-            child: _buildMouth(),
+              // Eyes
+              Positioned(
+                top: 38,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildEye(true),
+                    const SizedBox(width: 44),
+                    _buildEye(false),
+                  ],
+                ),
+              ),
+
+              // Mouth
+              Positioned(
+                bottom: 26,
+                child: _buildMouth(),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -102,7 +110,7 @@ class BmoFaceAvatar extends StatelessWidget {
       );
     }
 
-    // Default lively eye
+    // Default lively eye with symmetrical highlights
     return Container(
       width: 10,
       height: 18,
@@ -111,11 +119,15 @@ class BmoFaceAvatar extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Align(
-        alignment: Alignment.topRight,
+        alignment: isLeft ? Alignment.topLeft : Alignment.topRight,
         child: Container(
           width: 3,
           height: 3,
-          margin: const EdgeInsets.only(top: 2, right: 2),
+          margin: EdgeInsets.only(
+            top: 2,
+            left: isLeft ? 2 : 0,
+            right: isLeft ? 0 : 2,
+          ),
           decoration: const BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,

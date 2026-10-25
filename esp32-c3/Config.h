@@ -32,11 +32,11 @@ static constexpr uint8_t C_BLACK   = 0;
 static constexpr uint8_t C_BG      = C_WHITE; // Background Putih
 static constexpr uint8_t C_INK     = C_BLACK; // Garis & Fitur Hitam
 
-// Titik Acuan Fitur Wajah pada Layar 128x64
-static constexpr int EYE_Y         = 22;   // Posisi vertikal mata
+// Titik Acuan Fitur Wajah pada Layar 128x64 (Zona Biru Y: 16..63)
+static constexpr int EYE_Y         = 33;   // Posisi vertikal mata (pas di zona biru)
 static constexpr int EYE_DX        = 28;   // Jarak mata dari titik tengah
 static constexpr int EYE_W         = 6;    // Lebar mata default
 static constexpr int EYE_H         = 7;    // Tinggi mata default
 
 static constexpr int MOUTH_CX      = 64;   // Titik tengah horizontal mulut
-static constexpr int MOUTH_Y       = 44;   // Posisi vertikal mulut
+static constexpr int MOUTH_Y       = 51;   // Posisi vertikal mulut (pas di zona biru)

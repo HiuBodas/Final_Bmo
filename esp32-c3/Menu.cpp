@@ -45,6 +45,8 @@ static uint32_t     s_inboxConfStartMs = 0;
 
 // Submenu 7 (Pengaturan BMO) Status
 static int          s_settingsIdx      = 0;
+static int          s_settingsTopIdx   = 0;
+static bool         s_darkMode         = false; // Default Tema Terang (Light Mode)
 static uint8_t      s_contrastLevel    = 2; // 0 = Rendah(35), 1 = Sedang(128), 2 = Maksimal(255)
 static bool         s_screenFlipped    = false;
 static bool         s_mochiEnabled     = false;
@@ -112,6 +114,7 @@ void menuInit() {
 
   // Muat konfigurasi tersimpan dari Flash NVS
   s_cfgPrefs.begin("bmo_cfg", true);
+  s_darkMode      = s_cfgPrefs.getBool("dark", false); // Default false (Tema Terang)
   s_contrastLevel = s_cfgPrefs.getUChar("contrast", 2);
   s_screenFlipped = s_cfgPrefs.getBool("flip", false);
   s_mochiEnabled  = s_cfgPrefs.getBool("mochi", false);
@@ -121,6 +124,7 @@ void menuInit() {
   uint8_t cVal = (s_contrastLevel == 0) ? 35 : ((s_contrastLevel == 1) ? 128 : 255);
   displaySetContrast(cVal);
   displaySetFlip(s_screenFlipped);
+  displaySetDarkMode(s_darkMode);
 }
 
 bool menuIsActive() {
@@ -253,7 +257,8 @@ static void updateMainMenu(uint32_t now) {
 
       case 6: // PENGATURAN BMO
         s_state = MENU_STATE_SUB_SETTINGS;
-        s_settingsIdx = 0;
+        s_settingsIdx    = 0;
+        s_settingsTopIdx = 0;
         return;
 
       case 7: // KEMBALI KE HOME
@@ -616,7 +621,7 @@ static void updateSubmenuInbox(uint32_t now) {
 // 4. RENDER & LOGIKA SUBMENU 7: PENGATURAN BMO
 // -----------------------------------------------------------------------------
 static void updateSubmenuSettings(uint32_t now) {
-  static const int SETTINGS_COUNT = 4;
+  static const int SETTINGS_COUNT = 5;
 
   if (g_navPending) {
     NavEvent ev = g_pendingNav;
@@ -637,6 +642,16 @@ static void updateSubmenuSettings(uint32_t now) {
     s_lastActivityMs = now;
 
     if (s_settingsIdx == 0) {
+      // 0. Ganti Tema Layar (GELAP / TERANG)
+      s_darkMode = !s_darkMode;
+      displaySetDarkMode(s_darkMode);
+
+      // Simpan ke Flash NVS
+      s_cfgPrefs.begin("bmo_cfg", false);
+      s_cfgPrefs.putBool("dark", s_darkMode);
+      s_cfgPrefs.end();
+      Serial.printf("[Settings] Tema diubah ke: %s\n", s_darkMode ? "GELAP (Dark Mode)" : "TERANG (Light Mode)");
+    } else if (s_settingsIdx == 1) {
       // 1. Ganti Kontras Layar
       s_contrastLevel = (s_contrastLevel + 1) % 3;
       uint8_t cVal = (s_contrastLevel == 0) ? 35 : ((s_contrastLevel == 1) ? 128 : 255);
@@ -647,7 +662,7 @@ static void updateSubmenuSettings(uint32_t now) {
       s_cfgPrefs.putUChar("contrast", s_contrastLevel);
       s_cfgPrefs.end();
       Serial.printf("[Settings] Kontras diubah ke level: %d (%d)\n", s_contrastLevel, cVal);
-    } else if (s_settingsIdx == 1) {
+    } else if (s_settingsIdx == 2) {
       // 2. Putar Layar (Flip 180°)
       s_screenFlipped = !s_screenFlipped;
       displaySetFlip(s_screenFlipped);
@@ -657,7 +672,7 @@ static void updateSubmenuSettings(uint32_t now) {
       s_cfgPrefs.putBool("flip", s_screenFlipped);
       s_cfgPrefs.end();
       Serial.printf("[Settings] Putar layar: %s\n", s_screenFlipped ? "180 Derajat" : "Normal 0");
-    } else if (s_settingsIdx == 2) {
+    } else if (s_settingsIdx == 3) {
       // 3. Ganti Mode Kepribadian
       s_mochiEnabled = !s_mochiEnabled;
       s_cfgPrefs.begin("bmo_cfg", false);
@@ -686,25 +701,35 @@ static void updateSubmenuSettings(uint32_t now) {
 
   // Label opsi-opsi
   char opt0[24];
-  const char* cLabels[] = { "RENDAH", "SEDANG", "MAX" };
-  snprintf(opt0, sizeof(opt0), "KONTRAS: [%s]", cLabels[s_contrastLevel]);
+  snprintf(opt0, sizeof(opt0), "TEMA: [%s]", s_darkMode ? "GELAP" : "TERANG");
 
   char opt1[24];
-  snprintf(opt1, sizeof(opt1), "PUTAR LAYAR: [%s]", s_screenFlipped ? "180^" : "0^");
+  const char* cLabels[] = { "RENDAH", "SEDANG", "MAX" };
+  snprintf(opt1, sizeof(opt1), "KONTRAS: [%s]", cLabels[s_contrastLevel]);
 
   char opt2[24];
-  snprintf(opt2, sizeof(opt2), "IDLE: [%s]", s_mochiEnabled ? "MOCHI" : "RUTIN");
+  snprintf(opt2, sizeof(opt2), "PUTAR LAYAR: [%s]", s_screenFlipped ? "180^" : "0^");
 
-  const char* optLabels[4] = { opt0, opt1, opt2, "KEMBALI KE MENU" };
+  char opt3[24];
+  snprintf(opt3, sizeof(opt3), "IDLE: [%s]", s_mochiEnabled ? "MOCHI" : "RUTIN");
+
+  const char* optLabels[5] = { opt0, opt1, opt2, opt3, "KEMBALI KE MENU" };
+
+  // Scroll Viewport Otomatis (Maksimal 4 item terlihat sekaligus)
+  if (s_settingsIdx < s_settingsTopIdx) s_settingsTopIdx = s_settingsIdx;
+  if (s_settingsIdx >= s_settingsTopIdx + 4) s_settingsTopIdx = s_settingsIdx - 3;
 
   for (int i = 0; i < 4; ++i) {
+    int itemIdx = s_settingsTopIdx + i;
+    if (itemIdx >= SETTINGS_COUNT) break;
+
     int y = 16 + i * 11;
-    if (i == s_settingsIdx) {
+    if (itemIdx == s_settingsIdx) {
       fbFillRoundRect(4, y, 120, 11, 2, C_BLACK);
       fbDrawRightArrow(8, y + 3, C_WHITE);
-      fbDrawString(18, y + 2, optLabels[i], C_WHITE);
+      fbDrawString(18, y + 2, optLabels[itemIdx], C_WHITE);
     } else {
-      fbDrawString(18, y + 2, optLabels[i], C_BLACK);
+      fbDrawString(18, y + 2, optLabels[itemIdx], C_BLACK);
     }
   }
 

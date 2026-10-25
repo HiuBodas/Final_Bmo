@@ -417,6 +417,79 @@ class BleService extends ChangeNotifier {
     );
   }
 
+  Future<bool> sendSpotifyLyric(String currentLine, [String nextLine = '']) {
+    final payload = nextLine.isNotEmpty ? '$currentLine|$nextLine' : currentLine;
+    return sendCommand(
+      '[LYRIC] $payload',
+      logTitle: 'Lirik Lagu BMO',
+      logDetail: currentLine,
+    );
+  }
+
+  Future<bool> sendLyricFetchRequest(String title, String artist) {
+    return sendCommand(
+      '[LYRIC_FETCH] $title|$artist',
+      logTitle: 'Fetch Lirik via WiFi',
+      logDetail: '$title - $artist',
+    );
+  }
+
+  Future<bool> sendCustomName(String name) {
+    return sendCommand(
+      '[NAME] $name',
+      logTitle: 'Ubah Nama BMO',
+      logDetail: name,
+    );
+  }
+
+  Future<bool> sendCanvasClear([bool whiteBackground = true]) {
+    return sendCommand(
+      '[DRAW] CLEAR:${whiteBackground ? 1 : 0}',
+      logTitle: 'Kanvas BMO',
+      logDetail: 'Bersihkan Layar',
+    );
+  }
+
+  Future<bool> sendCanvasExit() {
+    return sendCommand(
+      '[DRAW] EXIT',
+      logTitle: 'Kanvas BMO',
+      logDetail: 'Keluar Kanvas',
+    );
+  }
+
+  Future<bool> sendCanvasInvert(bool invert) {
+    return sendCommand(
+      '[DRAW] INVERT:${invert ? 1 : 0}',
+      logTitle: 'Kanvas BMO',
+      logDetail: invert ? 'Invert Hitam' : 'Normal Putih',
+    );
+  }
+
+  Future<bool> sendCanvasLine(int x0, int y0, int x1, int y1) {
+    return sendCommand(
+      '[DRAW] L:$x0,$y0,$x1,$y1',
+      logTitle: 'Garis Kanvas',
+      logDetail: '($x0,$y0)->($x1,$y1)',
+    );
+  }
+
+  Future<void> sendFullCanvasBitmap(List<int> bytes1024) async {
+    if (bytes1024.length != 1024) return;
+    for (int page = 0; page < 8; page++) {
+      final start = page * 128;
+      final end = start + 128;
+      final chunk = bytes1024.sublist(start, end);
+      final hex = chunk.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+      await sendCommand(
+        '[DRAW] P:$page:$hex',
+        logTitle: 'Kirim Gambar',
+        logDetail: 'Halaman ${page + 1}/8',
+      );
+      await Future.delayed(const Duration(milliseconds: 15));
+    }
+  }
+
   void _addLog(String title, String message, bool isSuccess) {
     _logs.insert(0, BmoLogEntry(title: title, message: message, isSuccess: isSuccess));
     if (_logs.length > 50) _logs.removeLast();

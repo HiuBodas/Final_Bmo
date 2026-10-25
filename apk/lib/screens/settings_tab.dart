@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/ble_service.dart';
 import '../theme/bmo_theme.dart';
 import '../widgets/glass_container.dart';
@@ -17,6 +18,7 @@ class SettingsTab extends StatefulWidget {
 class _SettingsTabState extends State<SettingsTab> with WidgetsBindingObserver {
   final BleService _ble = BleService();
   final RealtimeNotificationService _notif = RealtimeNotificationService();
+  final TextEditingController _nameController = TextEditingController(text: 'BMO');
   bool _filterBmoOnly = true;
   bool _hasNotifPermission = false;
   bool _autoForward = true;
@@ -28,12 +30,23 @@ class _SettingsTabState extends State<SettingsTab> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _checkPermissions();
     _loadNotifState();
+    _loadSavedName();
     _ble.fetchSystemAndBondedDevices(autoAttach: true);
+  }
+
+  void _loadSavedName() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _nameController.text = prefs.getString('bmo_custom_name') ?? 'BMO';
+      });
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _nameController.dispose();
     super.dispose();
   }
 
@@ -197,6 +210,84 @@ class _SettingsTabState extends State<SettingsTab> with WidgetsBindingObserver {
               style: TextStyle(fontSize: 14, color: BmoTheme.textSecondary),
             ),
             const SizedBox(height: 20),
+
+            // Card Kustom Nama Layar BMO
+            GlassContainer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.badge_rounded, color: BmoTheme.bmoMint, size: 22),
+                      SizedBox(width: 8),
+                      Text(
+                        'Kustom Nama Layar BMO',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: BmoTheme.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Nama ini akan muncul di pojok kiri atas layar OLED BMO berdampingan dengan jam digital di tengah.',
+                    style: TextStyle(fontSize: 12, color: BmoTheme.textSecondary),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _nameController,
+                          maxLength: 8,
+                          style: const TextStyle(color: BmoTheme.textPrimary, fontWeight: FontWeight.bold),
+                          decoration: InputDecoration(
+                            labelText: 'Nama BMO (Maks 8 Huruf)',
+                            hintText: 'BMO, LUNA, dsb.',
+                            labelStyle: const TextStyle(color: BmoTheme.textMuted),
+                            filled: true,
+                            fillColor: Colors.black.withOpacity(0.25),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(color: BmoTheme.glassBorder),
+                            ),
+                            counterText: '',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final name = _nameController.text.trim();
+                          if (name.isEmpty) return;
+                          HapticFeedback.lightImpact();
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setString('bmo_custom_name', name);
+                          if (_ble.isConnected) {
+                            await _ble.sendCustomName(name);
+                          }
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Nama BMO di layar diubah ke "$name"!')),
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: BmoTheme.bmoMint,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: const Text('Simpan', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
 
             // Active Device Panel
             GlassContainer(

@@ -73,6 +73,12 @@ void displayClear();
 void displayFlush();
 void displaySetContrast(uint8_t contrast);
 void displaySetFlip(bool flipped);
+void displaySetDarkMode(bool dark);
+bool displayIsDarkMode();
+
+// Nama Custom BMO di Header Layar
+void   displaySetCustomName(const String& name);
+String displayGetCustomName();
 
 void putPx(int x, int y, uint8_t color);
 void fbFill(uint8_t color);
@@ -129,6 +135,7 @@ void fbDrawCheckmark(int x, int y, uint8_t color);
 void fbDrawWifiIcon(int x, int y, uint8_t state, uint8_t color, uint32_t now);
 void fbDrawWeatherIcon(int x, int y, uint8_t kind, uint8_t color, uint32_t now);
 void fbDrawMusicNote(int x, int y, uint8_t color);
+void fbDrawFaceStatusBar(uint32_t now);
 
 void drawFaceToBuffer(const FaceState &s, uint32_t now);
 void renderFrame(const FaceState &s, uint32_t now);

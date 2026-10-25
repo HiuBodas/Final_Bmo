@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../theme/bmo_theme.dart';
 import 'home_tab.dart';
 import 'simulator_tab.dart';
+import 'doodle_tab.dart';
 import 'wifi_provisioning_tab.dart';
 import 'settings_tab.dart';
 
@@ -21,11 +22,13 @@ class _MainScaffoldState extends State<MainScaffold> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       HomeTab(
-        onNavigateToSettings: () => setState(() => _currentIndex = 3),
+        onNavigateToSettings: () => setState(() => _currentIndex = 4),
         onNavigateToSimulator: () => setState(() => _currentIndex = 1),
-        onNavigateToWifi: () => setState(() => _currentIndex = 2),
+        onNavigateToDoodle: () => setState(() => _currentIndex = 2),
+        onNavigateToWifi: () => setState(() => _currentIndex = 3),
       ),
       const SimulatorTab(),
+      const DoodleTab(),
       const WifiProvisioningTab(),
       const SettingsTab(),
     ];
@@ -70,8 +73,8 @@ class _MainScaffoldState extends State<MainScaffold> {
 
           // Floating Frosted Glass Bottom Navigation Bar
           Positioned(
-            left: 20,
-            right: 20,
+            left: 14,
+            right: 14,
             bottom: 24,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(24),
@@ -88,9 +91,10 @@ class _MainScaffoldState extends State<MainScaffold> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _navItem(0, Icons.home_outlined, Icons.home_rounded, 'Beranda'),
-                      _navItem(1, Icons.mood_outlined, Icons.mood_rounded, 'Simulator'),
-                      _navItem(2, Icons.wifi_rounded, Icons.wifi_rounded, 'Wi-Fi'),
-                      _navItem(3, Icons.settings_outlined, Icons.settings_rounded, 'Setelan'),
+                      _navItem(1, Icons.mood_outlined, Icons.mood_rounded, 'Wajah'),
+                      _navItem(2, Icons.draw_outlined, Icons.draw_rounded, 'Gambar'),
+                      _navItem(3, Icons.wifi_rounded, Icons.wifi_rounded, 'Wi-Fi'),
+                      _navItem(4, Icons.settings_outlined, Icons.settings_rounded, 'Setelan'),
                     ],
                   ),
                 ),

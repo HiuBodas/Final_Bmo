@@ -4,6 +4,8 @@
 #include "Moods.h"
 #include "Particles.h"
 #include "BleManager.h"
+#include "SpotifyWidget.h"
+#include "DoodleWidget.h"
 
 const char* moodName(Mood m) {
   switch (m) {
@@ -714,7 +716,7 @@ void playMochiHomeBreath(uint32_t durationMs) {
     uint32_t wStart = millis();
     while (millis() - wStart < 25) {
       pollTouch();
-      if (g_touchPending || g_navPending || bleNotifIsActive()) return;
+      if (g_touchPending || g_navPending || bleNotifIsActive() || doodleIsActive() || spotifyIsActive()) return;
       delay(2);
     }
   }
@@ -722,7 +724,7 @@ void playMochiHomeBreath(uint32_t durationMs) {
 
 // Personality Engine Utama Dasai Mochi (Tempo Santai & Elegan)
 void bmoStepMochiPersonality() {
-  if (g_navPending || bleNotifIsActive()) return;
+  if (g_navPending || bleNotifIsActive() || doodleIsActive() || spotifyIsActive()) return;
 
   // Tangani jika ada sentuhan yang belum diproses
   if (g_touchPending) {

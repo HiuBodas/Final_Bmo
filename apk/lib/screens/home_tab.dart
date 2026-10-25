@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/ble_service.dart';
 import '../services/notification_service.dart';
 import '../theme/bmo_theme.dart';
@@ -11,12 +12,14 @@ class HomeTab extends StatefulWidget {
   final VoidCallback onNavigateToSettings;
   final VoidCallback onNavigateToSimulator;
   final VoidCallback onNavigateToWifi;
+  final VoidCallback? onNavigateToDoodle;
 
   const HomeTab({
     super.key,
     required this.onNavigateToSettings,
     required this.onNavigateToSimulator,
     required this.onNavigateToWifi,
+    this.onNavigateToDoodle,
   });
 
   @override
@@ -29,13 +32,113 @@ class _HomeTabState extends State<HomeTab> with WidgetsBindingObserver {
   final TextEditingController _msgController = TextEditingController();
   final TextEditingController _senderController = TextEditingController(text: 'Luna');
   bool _hasNotifPermission = false;
+  String _customBmoName = 'BMO';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _checkNotifPermission();
+    _loadCustomName();
     _ble.fetchSystemAndBondedDevices(autoAttach: true);
+  }
+
+  void _loadCustomName() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _customBmoName = prefs.getString('bmo_custom_name') ?? 'BMO';
+      });
+    }
+  }
+
+  void _showCustomNameDialog() {
+    final controller = TextEditingController(text: _customBmoName);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: BmoTheme.surfaceElevated,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: BmoTheme.glassBorder),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.badge_rounded, color: BmoTheme.bmoMint),
+            SizedBox(width: 8),
+            Text(
+              'Kustom Nama BMO',
+              style: TextStyle(color: BmoTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Ubah nama yang muncul di pojok kiri atas layar OLED BMO (berdampingan dengan jam digital di tengah):',
+              style: TextStyle(fontSize: 13, color: BmoTheme.textSecondary),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: controller,
+              maxLength: 8,
+              autofocus: true,
+              style: const TextStyle(color: BmoTheme.textPrimary, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                labelText: 'Nama Layar BMO (Maks 8 Huruf)',
+                hintText: 'Contoh: BMO, LUNA',
+                labelStyle: const TextStyle(color: BmoTheme.textMuted),
+                filled: true,
+                fillColor: Colors.black.withOpacity(0.3),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: BmoTheme.glassBorder),
+                ),
+                counterStyle: const TextStyle(color: BmoTheme.textMuted),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal', style: TextStyle(color: BmoTheme.textMuted)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newName = controller.text.trim();
+              if (newName.isEmpty) return;
+              Navigator.pop(ctx);
+
+              setState(() {
+                _customBmoName = newName;
+              });
+
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('bmo_custom_name', newName);
+
+              if (_ble.isConnected) {
+                await _ble.sendCustomName(newName);
+              }
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Nama layar BMO diubah menjadi "$newName"!')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: BmoTheme.bmoMint,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Simpan & Terapkan', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -108,33 +211,21 @@ class _HomeTabState extends State<HomeTab> with WidgetsBindingObserver {
             // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'BMO Companion',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: BmoTheme.textPrimary,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Teman pintar di mejamu.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: BmoTheme.textSecondary,
+                Text(
+                  'BMO Companion',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: BmoTheme.textPrimary,
                       ),
-                    ),
-                  ],
                 ),
                 GestureDetector(
                   onTap: widget.onNavigateToSimulator,
                   child: const BmoFaceAvatar(
                     mood: 'happy',
-                    width: 60,
-                    height: 48,
+                    width: 56,
+                    height: 42,
                   ),
                 ),
               ],
@@ -171,13 +262,48 @@ class _HomeTabState extends State<HomeTab> with WidgetsBindingObserver {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    isConnected ? deviceName : 'Siap Menemani Harimu',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: BmoTheme.textPrimary,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          isConnected ? deviceName : 'Siap Menemani Harimu',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: BmoTheme.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      InkWell(
+                        onTap: _showCustomNameDialog,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: BmoTheme.primary.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: BmoTheme.primaryLight.withOpacity(0.4)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.edit_rounded, size: 13, color: BmoTheme.bmoMint),
+                              const SizedBox(width: 4),
+                              Text(
+                                _customBmoName,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: BmoTheme.bmoMint,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -346,6 +472,53 @@ class _HomeTabState extends State<HomeTab> with WidgetsBindingObserver {
               ),
             ),
             const SizedBox(height: 16),
+
+            // Card Kanvas Gambar Live
+            if (widget.onNavigateToDoodle != null) ...[
+              GlassContainer(
+                fill: const Color(0x1C3B82F6),
+                borderColor: BmoTheme.primaryLight.withOpacity(0.4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.draw_rounded, color: BmoTheme.bmoMint, size: 22),
+                        SizedBox(width: 8),
+                        Text(
+                          'Kanvas Gambar BMO (Live Doodle)',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: BmoTheme.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Gambar bebas dengan jarimu di kanvas HP dan langsung tampil otomatis di layar OLED BMO!',
+                      style: TextStyle(fontSize: 13, color: BmoTheme.textSecondary),
+                    ),
+                    const SizedBox(height: 14),
+                    ElevatedButton.icon(
+                      onPressed: widget.onNavigateToDoodle,
+                      icon: const Icon(Icons.palette_rounded, size: 18),
+                      label: const Text('Buka Kanvas Gambar Sekarang'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BmoTheme.primary,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // Quick Sync Card
             GlassContainer(

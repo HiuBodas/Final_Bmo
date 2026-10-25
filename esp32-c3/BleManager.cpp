@@ -10,6 +10,7 @@
 #include "WifiManager.h"
 #include "WeatherManager.h"
 #include "SpotifyWidget.h"
+#include "DoodleWidget.h"
 
 #include <BLEDevice.h>
 #include <BLEServer.h>
@@ -367,9 +368,27 @@ void parseIncomingBleMessage(const String& raw) {
         else if (tName == "LONG_HOLD" || tName == "HUG") s_pendingBleReaction = (int16_t)TOUCH_LONG_HOLD;
         else s_pendingBleReaction = (int16_t)TOUCH_QUICK_POKE;
         return;
+      } else if (content.startsWith("NAME:")) {
+        String newName = content.substring(5);
+        newName.trim();
+        displaySetCustomName(newName);
+        bleSend("[NAME] OK:" + displayGetCustomName());
+        return;
       }
     }
-    // B. Perintah Sinkronisasi Jam: [TIME] HH:mm:ss|dd/MM/yyyy|Day|100%
+    // B. Perintah Custom Nama BMO: [NAME] NamaBaru atau [NAME] GET
+    else if (tag == "NAME") {
+      String newName = content;
+      newName.trim();
+      if (newName.equalsIgnoreCase("GET")) {
+        bleSend("[NAME] " + displayGetCustomName());
+      } else {
+        displaySetCustomName(newName);
+        bleSend("[NAME] OK:" + displayGetCustomName());
+      }
+      return;
+    }
+    // C. Perintah Sinkronisasi Jam: [TIME] HH:mm:ss|dd/MM/yyyy|Day|100%
     else if (tag == "TIME") {
       appName = "JAM & WAKTU";
       sender  = "SINKRON HP";
@@ -451,6 +470,98 @@ void parseIncomingBleMessage(const String& raw) {
         spotifyOpen();
         bleSend("[SPOTIFY] OK");
         return;
+      }
+    }
+    // G. Sinkronisasi Lirik Real-Time: [LYRIC] BarisAktif|BarisBerikutnya
+    else if (tag == "LYRIC") {
+      String cur = content;
+      String nxt = "";
+      int pipeIdx = content.indexOf('|');
+      if (pipeIdx != -1) {
+        cur = content.substring(0, pipeIdx);
+        nxt = content.substring(pipeIdx + 1);
+      }
+      cur.trim();
+      nxt.trim();
+      spotifySetLyricsLine(cur, nxt);
+      bleSend("[LYRIC] OK");
+      return;
+    }
+    // H. Permintaan Fetch Lirik Mandiri via Wi-Fi: [LYRIC_FETCH] Judul|Artis
+    else if (tag == "LYRIC_FETCH") {
+      String title = content;
+      String artist = "";
+      int pipeIdx = content.indexOf('|');
+      if (pipeIdx != -1) {
+        title  = content.substring(0, pipeIdx);
+        artist = content.substring(pipeIdx + 1);
+      }
+      title.trim();
+      artist.trim();
+      spotifySetTrack(title, artist);
+      spotifyOpen();
+      spotifyFetchLyrics();
+      bleSend("[LYRIC_FETCH] OK");
+      return;
+    }
+    // I. Perintah Kanvas Gambar Langsung: [DRAW]
+    else if (tag == "DRAW") {
+      if (content.startsWith("CLEAR")) {
+        bool whiteBg = true;
+        if (content.indexOf(":0") != -1) whiteBg = false;
+        doodleClear(whiteBg);
+        doodleOpen();
+        bleSend("[DRAW] OK");
+        return;
+      } else if (content.startsWith("EXIT")) {
+        doodleClose();
+        bleSend("[DRAW] EXIT");
+        return;
+      } else if (content.startsWith("INVERT:")) {
+        bool inv = content.substring(7).toInt() == 1;
+        doodleSetInvert(inv);
+        doodleOpen();
+        bleSend("[DRAW] OK");
+        return;
+      } else if (content.startsWith("L:")) {
+        // [DRAW] L:x0,y0,x1,y1
+        int c1 = content.indexOf(',', 2);
+        int c2 = (c1 != -1) ? content.indexOf(',', c1 + 1) : -1;
+        int c3 = (c2 != -1) ? content.indexOf(',', c2 + 1) : -1;
+        if (c1 != -1 && c2 != -1 && c3 != -1) {
+          int x0 = content.substring(2, c1).toInt();
+          int y0 = content.substring(c1 + 1, c2).toInt();
+          int x1 = content.substring(c2 + 1, c3).toInt();
+          int y1 = content.substring(c3 + 1).toInt();
+          doodleDrawLine(x0, y0, x1, y1, C_BLACK);
+          doodleOpen();
+        }
+        return;
+      } else if (content.startsWith("P:")) {
+        // [DRAW] P:pageIdx:HEX_DATA
+        int c1 = content.indexOf(':', 2);
+        if (c1 != -1) {
+          int pageIdx = content.substring(2, c1).toInt();
+          String hex = content.substring(c1 + 1);
+          hex.trim();
+          uint8_t pageData[128];
+          int byteCount = 0;
+          for (unsigned int i = 0; i + 1 < hex.length() && byteCount < 128; i += 2) {
+            char ch1 = hex[i];
+            char ch2 = hex[i + 1];
+            auto h2v = [](char c) -> uint8_t {
+              if (c >= '0' && c <= '9') return c - '0';
+              if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+              if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+              return 0;
+            };
+            pageData[byteCount++] = (h2v(ch1) << 4) | h2v(ch2);
+          }
+          doodleSetPage(pageIdx, pageData, byteCount);
+          doodleOpen();
+          bleSend("[DRAW] P_OK:" + String(pageIdx));
+          return;
+        }
       }
     }
     // F. Pesan Notifikasi Aplikasi (WhatsApp, SMS, dsb)

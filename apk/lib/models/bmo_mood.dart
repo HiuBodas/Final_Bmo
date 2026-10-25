@@ -1,14 +1,20 @@
+import 'package:flutter/material.dart';
+
 class BmoMoodItem {
   final String id;
   final String label;
   final String emoji;
   final String bleCommand;
+  final IconData? icon;
+  final String? subtitle;
 
   const BmoMoodItem({
     required this.id,
     required this.label,
-    required this.emoji,
+    this.emoji = '',
     required this.bleCommand,
+    this.icon,
+    this.subtitle,
   });
 }
 
@@ -34,9 +40,33 @@ class BmoMoods {
   ];
 
   static const List<BmoMoodItem> touches = [
-    BmoMoodItem(id: 'poke', label: 'Colek (Poke)', emoji: '👉', bleCommand: '[BMO] TOUCH:POKE'),
-    BmoMoodItem(id: 'hold', label: 'Elus (Pet)', emoji: '💆', bleCommand: '[BMO] TOUCH:HOLD'),
-    BmoMoodItem(id: 'long_hold', label: 'Peluk (Hug)', emoji: '💖', bleCommand: '[BMO] TOUCH:LONG_HOLD'),
-    BmoMoodItem(id: 'tickle', label: 'Gelitik (Tickle)', emoji: '😂', bleCommand: '[BMO] TOUCH:TICKLE'),
+    BmoMoodItem(
+      id: 'poke',
+      label: 'Ketukan Singkat',
+      subtitle: 'Short Tap',
+      icon: Icons.touch_app_rounded,
+      bleCommand: '[BMO] TOUCH:POKE',
+    ),
+    BmoMoodItem(
+      id: 'hold',
+      label: 'Sentuhan Lembut',
+      subtitle: 'Soft Hold',
+      icon: Icons.pan_tool_alt_rounded,
+      bleCommand: '[BMO] TOUCH:HOLD',
+    ),
+    BmoMoodItem(
+      id: 'long_hold',
+      label: 'Tekan & Tahan',
+      subtitle: 'Long Press',
+      icon: Icons.fingerprint_rounded,
+      bleCommand: '[BMO] TOUCH:LONG_HOLD',
+    ),
+    BmoMoodItem(
+      id: 'tickle',
+      label: 'Ketukan Beruntun',
+      subtitle: 'Rapid Multi-Tap',
+      icon: Icons.vibration_rounded,
+      bleCommand: '[BMO] TOUCH:TICKLE',
+    ),
   ];
 }

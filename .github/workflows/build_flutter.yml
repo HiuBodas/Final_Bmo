@@ -45,7 +45,12 @@ jobs:
       - name: Prepare APK for Artifact
         working-directory: ./apk
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/BMO-Companion-v1.0.apk
+          mkdir -p build/app/outputs/flutter-apk
+          if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
+            cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/BMO-Companion-v1.0.apk
+          elif [ -f build/app/outputs/apk/release/app-release.apk ]; then
+            cp build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/BMO-Companion-v1.0.apk
+          fi
 
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
@@ -57,8 +62,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.0.0
-          name: BMO Companion Release v1.0.0
+          tag_name: v1.0.1
+          name: BMO Companion Release v1.0.1
           draft: false
           prerelease: false
           generate_release_notes: true
@@ -83,7 +88,9 @@ jobs:
 
       - name: Ensure iOS Scaffolding
         working-directory: ./apk
-        run: flutter create --platforms=ios --org com.bmo .
+        run: |
+          flutter create --platforms=ios --org com.bmo .
+          git checkout ios/Runner/Info.plist || true
 
       - name: Install Dependencies
         working-directory: ./apk

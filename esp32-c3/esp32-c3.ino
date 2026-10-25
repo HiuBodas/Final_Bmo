@@ -15,6 +15,7 @@
 #include "WeatherManager.h"
 #include "SpotifyWidget.h"
 #include "WebDashboard.h"
+#include "DoodleWidget.h"
 
 // -----------------------------------------------------------------------------
 // Pilihan Mode Idle Wajah BMO (saat tidak di Menu & tidak Terkunci):
@@ -55,6 +56,7 @@ void setup() {
   weatherInit();
   spotifyInit();
   webDashboardInit();
+  doodleInit();
   wifiInit();
   Serial.println("[init] Wi-Fi manager & Network Services initialized.");
 
@@ -70,7 +72,13 @@ void loop() {
   // 0. Prioritas Layanan Web Dashboard Lokal (http://bmo.local)
   webDashboardHandle();
 
-  // 1. Interupsi Layar Widget Spotify Now Playing
+  // 1. Interupsi Layar Doodle / Kanvas Gambar
+  if (doodleIsActive()) {
+    doodleUpdate();
+    return;
+  }
+
+  // 2. Interupsi Layar Widget Spotify Now Playing
   if (spotifyIsActive()) {
     spotifyUpdate();
     return;
@@ -169,7 +177,7 @@ void loop() {
     };
 
     for (const auto &sc : script) {
-      if (g_navPending || menuIsActive() || menuIsLocked() || bleNotifIsActive() || bleHasPendingAction()) break;
+      if (g_navPending || menuIsActive() || menuIsLocked() || bleNotifIsActive() || bleHasPendingAction() || doodleIsActive() || spotifyIsActive()) break;
 
       // Periksa jika ada sentuhan sebelum mood berikutnya
       if (g_touchPending) {

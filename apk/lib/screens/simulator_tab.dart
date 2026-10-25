@@ -36,13 +36,13 @@ class _SimulatorTabState extends State<SimulatorTab> {
     HapticFeedback.heavyImpact();
     setState(() {
       _activeMood = item.id;
-      _lastActionStatus = 'Simulasi sentuhan ${item.label} dikirim.';
+      _lastActionStatus = 'Perintah sentuh ${item.label} terkirim.';
     });
 
     _ble.sendCommand(
       item.bleCommand,
-      logTitle: 'Sentuhan Sensor BMO',
-      logDetail: '${item.emoji} ${item.label}',
+      logTitle: 'Uji Sensor Sentuh',
+      logDetail: item.label,
     );
   }
 
@@ -66,7 +66,7 @@ class _SimulatorTabState extends State<SimulatorTab> {
             ),
             const SizedBox(height: 4),
             const Text(
-              'Kendali ekspresi wajah & simulasi sensor sentuh secara langsung.',
+              'Kendali ekspresi wajah dan interaksi sentuh langsung BMO.',
               style: TextStyle(fontSize: 14, color: BmoTheme.textSecondary),
             ),
             const SizedBox(height: 20),
@@ -147,11 +147,19 @@ class _SimulatorTabState extends State<SimulatorTab> {
 
             // Section 2: Touch Sensors Grid
             const Text(
-              'Simulasi Sensor Sentuh Fisik (TTP223)',
+              'Sentuh Langsung',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: BmoTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Kirimkan interaksi sentuh langsung ke BMO.',
+              style: TextStyle(
+                fontSize: 13,
+                color: BmoTheme.textSecondary,
               ),
             ),
             const SizedBox(height: 12),
@@ -162,7 +170,7 @@ class _SimulatorTabState extends State<SimulatorTab> {
                 crossAxisCount: 2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 2.2,
+                childAspectRatio: 2.1,
               ),
               itemCount: BmoMoods.touches.length,
               itemBuilder: (context, index) {
@@ -170,23 +178,53 @@ class _SimulatorTabState extends State<SimulatorTab> {
 
                 return GlassContainer(
                   borderRadius: 14,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   fill: const Color(0x2A2A6AEB),
                   borderColor: BmoTheme.primary.withOpacity(0.5),
                   onTap: () => _triggerTouch(item),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(item.emoji, style: const TextStyle(fontSize: 20)),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          item.label,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: BmoTheme.primary.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          item.icon ?? Icons.touch_app_rounded,
+                          size: 18,
+                          color: BmoTheme.primaryLight,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.label,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (item.subtitle != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                item.subtitle!,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: BmoTheme.textMuted,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                     ],

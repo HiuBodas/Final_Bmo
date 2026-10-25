@@ -4,6 +4,34 @@
 // =============================================================================
 #include "Display.h"
 #include <Wire.h>
+#include <Preferences.h>
+#include "NtpClock.h"
+#include "WifiManager.h"
+#include "BleManager.h"
+
+// Nama Kustom BMO (disimpan permanen di NVS Flash)
+static String s_bmoCustomName = "BMO";
+
+void displaySetCustomName(const String& name) {
+  if (name.length() > 0) {
+    s_bmoCustomName = name;
+    s_bmoCustomName.trim();
+    if (s_bmoCustomName.length() > 8) {
+      s_bmoCustomName = s_bmoCustomName.substring(0, 8); // Maks 8 huruf agar muat rapi di kiri
+    }
+  } else {
+    s_bmoCustomName = "BMO";
+  }
+
+  Preferences prefs;
+  prefs.begin("bmo_cfg", false);
+  prefs.putString("bmo_name", s_bmoCustomName);
+  prefs.end();
+}
+
+String displayGetCustomName() {
+  return s_bmoCustomName;
+}
 
 // Framebuffer 128x64 bit monokrom = 128 * 64 / 8 = 1024 byte
 static uint8_t fb[OLED_W * OLED_H / 8];
@@ -19,6 +47,12 @@ static void sendCommand(uint8_t cmd) {
 }
 
 void displayInit() {
+  // Muat nama kustom BMO dari NVS Flash
+  Preferences prefs;
+  prefs.begin("bmo_cfg", true);
+  s_bmoCustomName = prefs.getString("bmo_name", "BMO");
+  prefs.end();
+
   Wire.begin(PIN_OLED_SDA, PIN_OLED_SCL, 400000); // I2C Fast Mode 400 kHz
   delay(50);
 
@@ -91,6 +125,17 @@ void displaySetFlip(bool flipped) {
     sendCommand(0xA1); // Column 127 mapped to SEG0
     sendCommand(0xC8); // COM[N-1] to COM0
   }
+}
+
+static bool s_isDark = false;
+
+void displaySetDarkMode(bool dark) {
+  s_isDark = dark;
+  sendCommand(dark ? 0xA7 : 0xA6);
+}
+
+bool displayIsDarkMode() {
+  return s_isDark;
 }
 
 // -----------------------------------------------------------------------------
@@ -516,10 +561,43 @@ static void fbDrawThinkingPips(uint32_t now) {
 }
 
 // -----------------------------------------------------------------------------
+// Status Bar / Header di Zona Kuning (Y: 0 s/d 15)
+// -----------------------------------------------------------------------------
+void fbDrawFaceStatusBar(uint32_t now) {
+  // 1. Status Bar di Sisi Kiri: Nama Custom BMO (X = 4, Y = 4)
+  fbDrawString(4, 4, s_bmoCustomName.c_str(), C_BLACK);
+
+  // 2. Jam Digital (NTP) Disimpan di Tengah Persis (Tidak bentrok dengan nama)
+  if (ntpIsSynced()) {
+    int h = 0, m = 0, s = 0;
+    ntpGetTime(h, m, s);
+    char timeBuf[8];
+    snprintf(timeBuf, sizeof(timeBuf), "%02d:%02d", h, m);
+    int timeW = fbGetStringWidth(timeBuf, 1);
+    int timeX = (OLED_W - timeW) / 2; // Posisi x = 49 (tengah layar)
+    fbDrawString(timeX, 4, timeBuf, C_BLACK);
+  }
+
+  // 3. Indikator BLE (jika terhubung ke smartphone)
+  if (bleIsConnected()) {
+    fbDrawChar(103, 4, 'B', C_BLACK);
+  }
+
+  // 4. Ikon Wi-Fi Vektor Prosedural di Sisi Kanan (115, 3)
+  wifiDrawHeaderIcon(115, 3, C_BLACK);
+
+  // 5. Garis Pembatas Horisontal Presisi di Y = 15 (Batas zona kuning ke biru)
+  fbHLine(0, 15, OLED_W, C_BLACK);
+}
+
+// -----------------------------------------------------------------------------
 // Komposisi Frame Wajah BMO (Background Putih, Fitur Hitam)
 // -----------------------------------------------------------------------------
 void drawFaceToBuffer(const FaceState &s, uint32_t now) {
   displayClear();
+
+  // Status Bar / Header Zona Kuning (Y: 0..15)
+  fbDrawFaceStatusBar(now);
 
   int leftCx  = MOUTH_CX - EYE_DX + s.shakeX;
   int rightCx = MOUTH_CX + EYE_DX + s.shakeX;
@@ -646,42 +724,42 @@ void drawFaceToBuffer(const FaceState &s, uint32_t now) {
     }
   }
 
-  // Elemen Dekoratif & Partikel Statis
+  // Elemen Dekoratif & Partikel Statis (Disesuaikan ke Zona Biru Y: 18..28)
   if (s.tearVisible)   fbDrawTear(leftCx + 5, eyeY + EYE_H / 2 + 1, s.tearY, C_BLACK);
   if (s.sweatVisible)  fbDrawSweat(rightCx + 7, eyeY - EYE_H / 2 - 2, s.sweatY);
   if (s.starsVisible) {
     int t = (int)(now / 80) % 3;
-    fbDrawStar(12  + t,  10, 3, C_BLACK);
-    fbDrawStar(116 - t,  12, 3, C_BLACK);
+    fbDrawStar(12  + t,  20, 3, C_BLACK);
+    fbDrawStar(116 - t,  22, 3, C_BLACK);
   }
   if (s.heartsAround) {
     int t = (int)(now / 100) % 4;
-    fbDrawHeart(14 + t,  12, 3, C_BLACK);
-    fbDrawHeart(114 - t, 14, 3, C_BLACK);
+    fbDrawHeart(14 + t,  21, 3, C_BLACK);
+    fbDrawHeart(114 - t, 23, 3, C_BLACK);
   }
   if (s.questionMarks) {
     int phase = (int)(now / 200) % 3;
-    fbDrawQuestion(16 + phase, 12, C_BLACK);
-    fbDrawQuestion(112 - phase, 10, C_BLACK);
+    fbDrawQuestion(16 + phase, 21, C_BLACK);
+    fbDrawQuestion(112 - phase, 20, C_BLACK);
   }
   if (s.listeningMarks) fbDrawListeningMarks(now);
   if (s.thinkingDots)   fbDrawThinkingPips(now);
   if (s.snowFlakes) {
     int t = (int)(now / 100);
-    fbDrawSnow(14 + (t % 6),  10 + ((t * 2) % 4), 2);
-    fbDrawSnow(114 - (t % 5), 12 + ((t * 3) % 5), 2);
-    fbDrawSnow(64,            8  + ((t * 4) % 4), 2);
+    fbDrawSnow(14 + (t % 6),  20 + ((t * 2) % 4), 2);
+    fbDrawSnow(114 - (t % 5), 22 + ((t * 3) % 5), 2);
+    fbDrawSnow(64,            18 + ((t * 4) % 4), 2);
   }
   if (s.steamLines) {
     int phase = (int)(now / 80);
-    fbDrawSteam(16, 12, phase,     C_BLACK);
-    fbDrawSteam(64, 10, phase + 2, C_BLACK);
-    fbDrawSteam(112, 14, phase + 4, C_BLACK);
+    fbDrawSteam(16, 20, phase,     C_BLACK);
+    fbDrawSteam(64, 18, phase + 2, C_BLACK);
+    fbDrawSteam(112, 22, phase + 4, C_BLACK);
   }
   if (s.zzzLetters) {
     int t = (int)(now / 200) % 3;
-    fbDrawZ(106 + t, 14 - t, 2, C_BLACK);
-    fbDrawZ(116,     8,     3, C_BLACK);
+    fbDrawZ(106 + t, 23 - t, 2, C_BLACK);
+    fbDrawZ(116,     19,    3, C_BLACK);
   }
   if (s.glitchBars > 0) {
     for (uint8_t i = 0; i < s.glitchBars; ++i) {

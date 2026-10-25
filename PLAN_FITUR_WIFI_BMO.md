@@ -53,15 +53,24 @@ Sebelum fitur internet dijalankan, sistem memerlukan manajemen jaringan yang sta
     - **Status BMO Live**: Memantau Wi-Fi, IP, Jam NTP, Cuaca, dan statistik Tamagotchi (Kenyang/Senang).
     - **Tamagotchi Actions**: Tombol Beri Makan & Elus Kepala langsung dari PC.
 
-### 2.4. Spotify "Now Playing" Widget `[SELESAI]`
-* **Tujuan**: Menampilkan judul lagu yang sedang didengarkan saat bekerja.
-* **Implementasi**:
-  * Modul `SpotifyWidget.h` & `SpotifyWidget.cpp`.
-  * Endpoint HTTP: `POST /api/nowplaying?title=...&artist=...`.
-  * Desain Layar OLED:
-    - Judul lagu berjalan halus (*marquee text*).
-    - Nama artist terpusat.
-    - Equalizer audio 5-bar animasi prosedural melompat dinamis di bagian bawah layar.
+### 2.4. Spotify "Now Playing" Widget & Lirik Karaoke (LRCLIB) `[SELESAI]`
+* **Tujuan**: Menampilkan info lagu yang sedang didengarkan beserta lirik karaoke real-time di layar OLED BMO.
+* **Integrasi Lirik**: Menggunakan API lirik gratis & open-source **[LRCLIB](https://lrclib.net)** (tanpa API key).
+* **Mendukung 2 Mode Fleksibel**:
+  * **Opsi A (Karaoke Real-Time via Aplikasi Companion)**:
+    - Aplikasi Android mendownload lirik dari LRCLIB (format *Synced LRC* atau *Plain Text*).
+    - Aplikasi menyinkronkan baris lirik aktif secara presisi ke BMO via BLE (`[LYRIC] BarisAktif|BarisBerikutnya`).
+    - Pengguna juga bisa menyentuh baris lirik mana pun di HP untuk langsung menampilkannya di BMO.
+  * **Opsi B (Fetch Lirik Mandiri oleh ESP32 via Wi-Fi)**:
+    - Cukup masukkan Judul & Artis di aplikasi lalu tekan *Kirim (Opsi B: Wi-Fi)*.
+    - ESP32 otomatis melakukan HTTPS GET ke `https://lrclib.net/api/get` via Wi-Fi secara mandiri.
+    - Lirik disimpan dan otomatis di-scroll per baris setiap 4 detik, atau bisa di-tap menggunakan Sensor Sentuh 1 (Aksi) sebagai teleprompter karaoke manual!
+* **Desain Layar OLED (128x64)**:
+  - Header: Not musik vektor + Marquee judul & artis berjalan + Ikon status Wi-Fi.
+  - Area Utama: Baris lirik aktif (*word-wrapped* rapi jika panjang) + preview baris berikutnya.
+  - Footer: Mini equalizer 4-bar animasi prosedural + Indikator nomor baris lirik (`04/28`) atau badge `KARAOKE`.
+  - Fallback: Jika lagu instrumental / lirik belum tersedia, menampilkan tampilan klasik Equalizer 5-bar dinamis.
+
 
 ---
 
@@ -101,11 +110,18 @@ Sebelum fitur internet dijalankan, sistem memerlukan manajemen jaringan yang sta
   * Polling ke YouTube Data API v3 (`channels?part=statistics`) atau GitHub API (`repos/{owner}/{repo}`).
   * **Celebration Event**: Saat angka bertambah, BMO memicu efek partikel selebrasi penuh (konfeti dan bintang dari `Particles.h`) dan ekspresi perayaan khusus!
 
-### 4.3. Tamagotchi Cloud Sync & Multi-BMO Interaction
-* **Tujuan**: Status virtual pet tidak hilang dan bisa berinteraksi.
+### 4.4. Kanvas Gambar Langsung (Live Doodle Pad & Real-time Canvas) `[SELESAI]`
+* **Tujuan**: Menggambar bebas di aplikasi dan langsung diproyeksikan secara real-time ke layar OLED 128x64 BMO.
 * **Mekanisme**:
-  * Sync status Kenyang, Senang, dan Energi ke backend MQTT / REST sederhana.
-  * Fitur "Sapa Teman": BMO bisa menerima sinyal sapaan dari BMO lain melalui protokol MQTT publik.
+  * **Dual-Streaming Hybrid**:
+    1. **Real-time Vector Line**: Saat jari digeser, koordinat garis `(x0,y0)-(x1,y1)` dikirim via BLE (`[DRAW] L:x0,y0,x1,y1`) dan digambar instan menggunakan algoritma Bresenham di frame buffer ESP32.
+    2. **Full Page Bitmap Sync**: Saat jari diangkat, aplikasi mengemas 1024-byte frame buffer ke dalam 8 halaman SSD1306 (Page Addressing Mode) lalu mentransfernya via hex chunk BLE (`[DRAW] P:pageIdx:HEX`) untuk sinkronisasi 100% tanpa distorsi.
+  * **Fitur Kanvas**:
+    * Pensil & Penghapus (Ukuran 1px dan 2px).
+    * Toggle Invert (Latar Putih / Garis Hitam atau Latar Hitam / Garis Putih).
+    * Preset cepat 1-ketukan: Hati, Wajah Senyum, Bintang, Kucing.
+    * Tombol Bersihkan Layar & Keluar ke mode wajah normal.
+    * Interaksi Sensor Sentuh BMO: Ketukan pada sensor sentuh BMO saat mode kanvas dapat membalik warna layar (*invert*) atau keluar dari mode gambar.
 
 ---
 
@@ -115,8 +131,11 @@ Sebelum fitur internet dijalankan, sistem memerlukan manajemen jaringan yang sta
 | :--- | :--- | :--- | :--- |
 | **Fase 1** | **Wi-Fi Manager Core & NTP Clock**: Penyimpanan NVS, auto-reconnect background task, dan jam internet otomatis | Rendah - Sedang | Selesai (Seksi 1.1 - 2.1) |
 | **Fase 2** | **Live Weather HUD, Web Dashboard Laptop, & Spotify**: Ikon cuaca vektor, reaksi suhu wajah BMO, Web Dashboard `http://bmo.local`, dan Spotify Now Playing | Sedang | Selesai (Seksi 2.2 - 2.4) |
+| **Fase 2.5** | **Live Spotify Lyrics (Dual Option) & Custom Nama BMO**: Lirik real-time LRCLIB via BLE / ESP32 WiFi dan kustomisasi nama pemilik pada header OLED | Sedang | Selesai |
+| **Fase 2.6** | **Live Doodle Pad (Kanvas Gambar)**: Menggambar bebas di layar ponsel dan langsung diproyeksikan ke OLED SSD1306 BMO via BLE | Sedang | Selesai (Seksi 4.4) |
 | **Fase 3** | **Mini AI Companion & Ticker**: Integrasi Gemini AI response singkat, Ticker Crypto/Saham, dan Telegram Bot | Lanjutan | Tahap Berikutnya |
 
 ---
 
 *File rencana ini dapat dijadikan acuan utama saat mulai mengeksekusi integrasi kode ke firmware ESP32-C3.*
+
