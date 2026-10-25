@@ -25,7 +25,7 @@ class _DoodleTabState extends State<DoodleTab> {
   bool _isSending = false;
   String _statusText = 'Gambar dengan jarimu pada kanvas di bawah.';
 
-  Point<int>? _lastPoint;
+  Point? _lastPoint;
 
   @override
   void initState() {
@@ -35,7 +35,7 @@ class _DoodleTabState extends State<DoodleTab> {
   void _clearCanvas() {
     HapticFeedback.lightImpact();
     setState(() {
-      _pixels.fill(false);
+      _pixels.fillRange(0, _pixels.length, false);
       _statusText = 'Kanvas telah dibersihkan.';
     });
     if (_ble.isConnected) {
@@ -114,7 +114,7 @@ class _DoodleTabState extends State<DoodleTab> {
       } else {
         _drawLineOnMatrix(prevPoint.x, prevPoint.y, px, py, val);
       }
-      _lastPoint = Point<int>(px, py);
+      _lastPoint = Point(px, py);
     });
 
     // Kirim garis cepat real-time via BLE jika terhubung
@@ -175,7 +175,7 @@ class _DoodleTabState extends State<DoodleTab> {
 
   void _drawPreset(String type) {
     HapticFeedback.mediumImpact();
-    _pixels.fill(false);
+    _pixels.fillRange(0, _pixels.length, false);
 
     if (type == 'heart') {
       // Gambar Hati Cantik di tengah (cx: 64, cy: 30)

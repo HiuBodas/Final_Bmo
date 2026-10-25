@@ -59,6 +59,7 @@ class _WifiProvisioningTabState extends State<WifiProvisioningTab> {
 
   @override
   void dispose() {
+    _karaokeTimer?.cancel();
     _ssidController.dispose();
     _passController.dispose();
     _cityController.dispose();
@@ -159,18 +160,6 @@ class _WifiProvisioningTabState extends State<WifiProvisioningTab> {
       });
       await _ble.disconnectWifi();
     }
-  }
-
-  @override
-  void dispose() {
-    _karaokeTimer?.cancel();
-    _ssidController.dispose();
-    _passController.dispose();
-    _cityController.dispose();
-    _urlController.dispose();
-    _spotTitleController.dispose();
-    _spotArtistController.dispose();
-    super.dispose();
   }
 
   void _sendSpotifyToBmo() async {
