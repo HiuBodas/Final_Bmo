@@ -235,6 +235,168 @@ class _DoodleTabState extends State<DoodleTab> {
       _drawLineOnMatrix(32, 44, 42, 42, true);
       _drawLineOnMatrix(86, 40, 96, 38, true);
       _drawLineOnMatrix(86, 42, 96, 44, true);
+    } else if (type == 'bmo') {
+      // Badan BMO
+      _drawLineOnMatrix(49, 8, 79, 8, true);
+      _drawLineOnMatrix(46, 11, 46, 52, true);
+      _drawLineOnMatrix(82, 11, 82, 52, true);
+      _drawLineOnMatrix(49, 54, 79, 54, true);
+      // Sudut Lengkung Badan
+      _drawLineOnMatrix(46, 11, 49, 8, true);
+      _drawLineOnMatrix(82, 11, 79, 8, true);
+      _drawLineOnMatrix(46, 52, 49, 54, true);
+      _drawLineOnMatrix(82, 52, 79, 54, true);
+      // Layar BMO
+      _drawLineOnMatrix(52, 12, 76, 12, true);
+      _drawLineOnMatrix(52, 28, 76, 28, true);
+      _drawLineOnMatrix(50, 14, 50, 26, true);
+      _drawLineOnMatrix(78, 14, 78, 26, true);
+      // Wajah Senyum di Layar
+      _applyBrush(57, 18, true);
+      _applyBrush(71, 18, true);
+      _drawLineOnMatrix(62, 23, 66, 23, true);
+      // Slot Cartridge
+      _drawLineOnMatrix(52, 33, 76, 33, true);
+      _drawLineOnMatrix(52, 34, 76, 34, true);
+      // D-Pad Silang
+      _drawLineOnMatrix(54, 40, 58, 40, true);
+      _drawLineOnMatrix(54, 46, 58, 46, true);
+      _drawLineOnMatrix(56, 38, 56, 48, true);
+      _drawLineOnMatrix(53, 43, 59, 43, true);
+      // Tombol Aksi Kanan
+      _applyBrush(73, 40, true);
+      _applyBrush(76, 44, true);
+      _applyBrush(68, 45, true);
+      // Kaki & Tangan
+      _drawLineOnMatrix(54, 54, 54, 61, true);
+      _drawLineOnMatrix(52, 61, 56, 61, true);
+      _drawLineOnMatrix(74, 54, 74, 61, true);
+      _drawLineOnMatrix(72, 61, 76, 61, true);
+      _drawLineOnMatrix(46, 34, 38, 40, true);
+      _drawLineOnMatrix(82, 34, 90, 40, true);
+    } else if (type == 'gamepad') {
+      // Frame Kontroler
+      _drawLineOnMatrix(38, 18, 90, 18, true);
+      _drawLineOnMatrix(38, 46, 90, 46, true);
+      _drawLineOnMatrix(30, 26, 30, 38, true);
+      _drawLineOnMatrix(98, 26, 98, 38, true);
+      _drawLineOnMatrix(30, 26, 38, 18, true);
+      _drawLineOnMatrix(98, 26, 90, 18, true);
+      _drawLineOnMatrix(30, 38, 38, 46, true);
+      _drawLineOnMatrix(98, 38, 90, 46, true);
+      // D-Pad Silang Kiri
+      _drawLineOnMatrix(43, 32, 49, 32, true);
+      _drawLineOnMatrix(44, 31, 48, 31, true);
+      _drawLineOnMatrix(44, 33, 48, 33, true);
+      _drawLineOnMatrix(46, 29, 46, 35, true);
+      _drawLineOnMatrix(45, 30, 45, 34, true);
+      _drawLineOnMatrix(47, 30, 47, 34, true);
+      // Tombol Aksi Kanan (4 Bulatan)
+      _applyBrush(81, 26, true);
+      _applyBrush(82, 26, true);
+      _applyBrush(87, 32, true);
+      _applyBrush(88, 32, true);
+      _applyBrush(81, 38, true);
+      _applyBrush(82, 38, true);
+      _applyBrush(75, 32, true);
+      _applyBrush(76, 32, true);
+      // Tombol Select & Start
+      _drawLineOnMatrix(60, 32, 63, 32, true);
+      _drawLineOnMatrix(66, 32, 69, 32, true);
+    } else if (type == 'lightning') {
+      // Sambaran Petir Tajam
+      _drawLineOnMatrix(68, 6, 52, 30, true);
+      _drawLineOnMatrix(69, 6, 53, 30, true);
+      _drawLineOnMatrix(52, 30, 72, 30, true);
+      _drawLineOnMatrix(52, 31, 72, 31, true);
+      _drawLineOnMatrix(72, 30, 56, 58, true);
+      _drawLineOnMatrix(73, 30, 57, 58, true);
+    } else if (type == 'music') {
+      // Dua Not Balok Bertaut
+      for (int x = 46; x <= 53; x++) {
+        for (int y = 44; y <= 50; y++) {
+          _applyBrush(x, y, true);
+        }
+      }
+      _drawLineOnMatrix(53, 46, 53, 16, true);
+      _drawLineOnMatrix(54, 46, 54, 16, true);
+
+      for (int x = 72; x <= 79; x++) {
+        for (int y = 38; y <= 44; y++) {
+          _applyBrush(x, y, true);
+        }
+      }
+      _drawLineOnMatrix(79, 40, 79, 10, true);
+      _drawLineOnMatrix(80, 40, 80, 10, true);
+
+      _drawLineOnMatrix(53, 16, 80, 10, true);
+      _drawLineOnMatrix(53, 17, 80, 11, true);
+      _drawLineOnMatrix(53, 18, 80, 12, true);
+      _drawLineOnMatrix(53, 19, 80, 13, true);
+    } else if (type == 'moon') {
+      // Bulan Sabit & Bintang Mini
+      for (double t = -1.6; t <= 1.6; t += 0.03) {
+        final xOut = (58 + 22 * cos(t)).round();
+        final yOut = (32 + 22 * sin(t)).round();
+        _applyBrush(xOut, yOut, true);
+        final xIn = (68 + 18 * cos(t * 0.9)).round();
+        final yIn = (32 + 20 * sin(t * 0.9)).round();
+        _applyBrush(xIn, yIn, true);
+      }
+      _applyBrush(88, 20, true);
+      _drawLineOnMatrix(86, 20, 90, 20, true);
+      _drawLineOnMatrix(88, 18, 88, 22, true);
+    } else if (type == 'coffee') {
+      // Cangkir Kopi
+      _drawLineOnMatrix(48, 26, 78, 26, true);
+      _drawLineOnMatrix(48, 26, 52, 50, true);
+      _drawLineOnMatrix(78, 26, 74, 50, true);
+      _drawLineOnMatrix(52, 50, 74, 50, true);
+      // Gagang
+      _drawLineOnMatrix(78, 30, 88, 32, true);
+      _drawLineOnMatrix(88, 32, 88, 42, true);
+      _drawLineOnMatrix(88, 42, 76, 44, true);
+      // Piring Tatakan
+      _drawLineOnMatrix(42, 54, 84, 54, true);
+      _drawLineOnMatrix(44, 55, 82, 55, true);
+      // Asap Hangat
+      for (int dy = 0; dy < 8; dy++) {
+        _applyBrush(58 + (sin(dy * 0.8) * 2).round(), 22 - dy, true);
+        _applyBrush(68 + (sin(dy * 0.8 + 1.5) * 2).round(), 22 - dy, true);
+      }
+    } else if (type == 'ghost') {
+      // Hantu Lucu
+      for (double t = 3.14; t <= 6.28; t += 0.05) {
+        final x = (64 + 18 * cos(t)).round();
+        final y = (26 + 18 * sin(t)).round();
+        _applyBrush(x, y, true);
+      }
+      _drawLineOnMatrix(46, 26, 46, 48, true);
+      _drawLineOnMatrix(82, 26, 82, 48, true);
+      _drawLineOnMatrix(46, 48, 52, 44, true);
+      _drawLineOnMatrix(52, 44, 58, 48, true);
+      _drawLineOnMatrix(58, 48, 64, 44, true);
+      _drawLineOnMatrix(64, 44, 70, 48, true);
+      _drawLineOnMatrix(70, 48, 76, 44, true);
+      _drawLineOnMatrix(76, 44, 82, 48, true);
+      for (int dy = 0; dy < 3; dy++) {
+        for (int dx = 0; dx < 3; dx++) {
+          _applyBrush(54 + dx, 24 + dy, true);
+          _applyBrush(70 + dx, 24 + dy, true);
+        }
+      }
+    } else if (type == 'fire') {
+      // Nyala Api
+      _drawLineOnMatrix(64, 10, 78, 34, true);
+      _drawLineOnMatrix(78, 34, 78, 46, true);
+      _drawLineOnMatrix(78, 46, 64, 54, true);
+      _drawLineOnMatrix(64, 54, 50, 46, true);
+      _drawLineOnMatrix(50, 46, 50, 34, true);
+      _drawLineOnMatrix(50, 34, 64, 10, true);
+      _drawLineOnMatrix(64, 28, 70, 40, true);
+      _drawLineOnMatrix(70, 40, 64, 48, true);
+      _drawLineOnMatrix(64, 48, 58, 40, true);
+      _drawLineOnMatrix(58, 40, 64, 28, true);
     }
 
     setState(() {});
@@ -451,13 +613,70 @@ class _DoodleTabState extends State<DoodleTab> {
                     style: TextStyle(fontSize: 12, color: BmoTheme.textSecondary),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
-                      _presetChip('❤️ Hati', () => _drawPreset('heart')),
-                      _presetChip('😊 Senyum', () => _drawPreset('smile')),
-                      _presetChip('⭐ Bintang', () => _drawPreset('star')),
-                      _presetChip('🐱 Kucing', () => _drawPreset('cat')),
+                      _presetChip(
+                        icon: Icons.favorite_rounded,
+                        label: 'Hati',
+                        onTap: () => _drawPreset('heart'),
+                      ),
+                      _presetChip(
+                        icon: Icons.sentiment_very_satisfied_rounded,
+                        label: 'Senyum',
+                        onTap: () => _drawPreset('smile'),
+                      ),
+                      _presetChip(
+                        icon: Icons.star_rounded,
+                        label: 'Bintang',
+                        onTap: () => _drawPreset('star'),
+                      ),
+                      _presetChip(
+                        icon: Icons.pets_rounded,
+                        label: 'Kucing',
+                        onTap: () => _drawPreset('cat'),
+                      ),
+                      _presetChip(
+                        icon: Icons.smart_toy_rounded,
+                        label: 'BMO',
+                        onTap: () => _drawPreset('bmo'),
+                      ),
+                      _presetChip(
+                        icon: Icons.sports_esports_rounded,
+                        label: 'Gamepad',
+                        onTap: () => _drawPreset('gamepad'),
+                      ),
+                      _presetChip(
+                        icon: Icons.bolt_rounded,
+                        label: 'Petir',
+                        onTap: () => _drawPreset('lightning'),
+                      ),
+                      _presetChip(
+                        icon: Icons.music_note_rounded,
+                        label: 'Musik',
+                        onTap: () => _drawPreset('music'),
+                      ),
+                      _presetChip(
+                        icon: Icons.dark_mode_rounded,
+                        label: 'Bulan',
+                        onTap: () => _drawPreset('moon'),
+                      ),
+                      _presetChip(
+                        icon: Icons.coffee_rounded,
+                        label: 'Kopi',
+                        onTap: () => _drawPreset('coffee'),
+                      ),
+                      _presetChip(
+                        icon: Icons.blur_on_rounded,
+                        label: 'Hantu',
+                        onTap: () => _drawPreset('ghost'),
+                      ),
+                      _presetChip(
+                        icon: Icons.local_fire_department_rounded,
+                        label: 'Api',
+                        onTap: () => _drawPreset('fire'),
+                      ),
                     ],
                   ),
                 ],
@@ -523,20 +742,35 @@ class _DoodleTabState extends State<DoodleTab> {
     );
   }
 
-  Widget _presetChip(String label, VoidCallback onTap) {
+  Widget _presetChip({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
         decoration: BoxDecoration(
           color: BmoTheme.primary.withOpacity(0.2),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: BmoTheme.primaryLight.withOpacity(0.35)),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: BmoTheme.bmoMint),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ],
         ),
       ),
     );

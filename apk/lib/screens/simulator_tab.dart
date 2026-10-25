@@ -28,7 +28,7 @@ class _SimulatorTabState extends State<SimulatorTab> {
     _ble.sendCommand(
       item.bleCommand,
       logTitle: 'Ekspresi BMO',
-      logDetail: '${item.emoji} ${item.label}',
+      logDetail: item.label,
     );
   }
 
@@ -95,7 +95,7 @@ class _SimulatorTabState extends State<SimulatorTab> {
 
             // Section 1: Moods Grid
             const Text(
-              'Pilihan Ekspresi Wajah (12 Moods)',
+              'Pilihan Ekspresi Wajah (26 Moods)',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -126,12 +126,25 @@ class _SimulatorTabState extends State<SimulatorTab> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(item.emoji, style: const TextStyle(fontSize: 22)),
-                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? BmoTheme.primary.withOpacity(0.45)
+                              : BmoTheme.bmoMint.withOpacity(0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          item.icon ?? Icons.sentiment_satisfied_rounded,
+                          size: 19,
+                          color: isSelected ? Colors.white : BmoTheme.bmoMint,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
                       Text(
                         item.label,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11.5,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                           color: isSelected ? Colors.white : BmoTheme.textPrimary,
                         ),

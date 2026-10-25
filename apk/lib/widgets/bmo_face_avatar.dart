@@ -43,7 +43,13 @@ class BmoFaceAvatar extends StatelessWidget {
             alignment: Alignment.center,
             children: [
               // Cheeks (Blush)
-              if (mood == 'love' || mood == 'happy' || mood == 'hold' || mood == 'wink') ...[
+              if (mood == 'love' ||
+                  mood == 'happy' ||
+                  mood == 'hold' ||
+                  mood == 'wink' ||
+                  mood == 'laugh' ||
+                  mood == 'excited' ||
+                  mood == 'hungry') ...[
                 const Positioned(
                   left: 20,
                   bottom: 30,
@@ -71,7 +77,7 @@ class BmoFaceAvatar extends StatelessWidget {
 
               // Mouth
               Positioned(
-                bottom: 26,
+                bottom: 24,
                 child: _buildMouth(),
               ),
             ],
@@ -82,8 +88,18 @@ class BmoFaceAvatar extends StatelessWidget {
   }
 
   Widget _buildEye(bool isLeft) {
+    if (mood == 'cool') {
+      return Container(
+        width: 18,
+        height: 12,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(4),
+        ),
+      );
+    }
+
     if (mood == 'wink' && isLeft) {
-      // Wink eye (smile curve)
       return Container(
         width: 14,
         height: 6,
@@ -95,17 +111,84 @@ class BmoFaceAvatar extends StatelessWidget {
       );
     }
 
-    if (mood == 'love') {
-      return const Text('❤️', style: TextStyle(fontSize: 16));
+    if (mood == 'laugh') {
+      return Container(
+        width: 14,
+        height: 8,
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: Colors.black.withOpacity(0.88), width: 3),
+          ),
+        ),
+      );
     }
 
-    if (mood == 'sleepy') {
+    if (mood == 'love') {
+      return const Icon(
+        Icons.favorite_rounded,
+        size: 16,
+        color: Color(0xFFE91E63),
+      );
+    }
+
+    if (mood == 'dizzy') {
+      return Icon(
+        Icons.close_rounded,
+        size: 16,
+        color: Colors.black.withOpacity(0.85),
+      );
+    }
+
+    if (mood == 'glitch') {
+      return Container(
+        width: 12,
+        height: 14,
+        decoration: BoxDecoration(
+          color: isLeft ? const Color(0xFF2C443B) : Colors.black87,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      );
+    }
+
+    if (mood == 'sleepy' || mood == 'blink') {
       return Container(
         width: 14,
         height: 4,
         decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.85),
           borderRadius: BorderRadius.circular(2),
+        ),
+      );
+    }
+
+    if (mood == 'bored') {
+      return Container(
+        width: 12,
+        height: 6,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.85),
+          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(6)),
+        ),
+      );
+    }
+
+    if (mood == 'surprise' || mood == 'scared') {
+      return Container(
+        width: 16,
+        height: 16,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.black.withOpacity(0.88), width: 3),
+        ),
+        child: Center(
+          child: Container(
+            width: 4,
+            height: 4,
+            decoration: const BoxDecoration(
+              color: Colors.black,
+              shape: BoxShape.circle,
+            ),
+          ),
         ),
       );
     }
@@ -138,7 +221,13 @@ class BmoFaceAvatar extends StatelessWidget {
   }
 
   Widget _buildMouth() {
-    if (mood == 'happy' || mood == 'love' || mood == 'wink' || mood == 'tickle') {
+    if (mood == 'happy' ||
+        mood == 'love' ||
+        mood == 'wink' ||
+        mood == 'tickle' ||
+        mood == 'laugh' ||
+        mood == 'excited' ||
+        mood == 'wake') {
       return Container(
         width: 26,
         height: 14,
@@ -149,7 +238,38 @@ class BmoFaceAvatar extends StatelessWidget {
           ),
         ),
       );
-    } else if (mood == 'sad' || mood == 'angry') {
+    } else if (mood == 'hungry') {
+      return Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          Container(
+            width: 24,
+            height: 13,
+            decoration: const BoxDecoration(
+              color: Color(0xFF2C443B),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(14)),
+            ),
+          ),
+          Container(
+            width: 10,
+            height: 6,
+            decoration: const BoxDecoration(
+              color: Color(0xFFFF8B94),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(5)),
+            ),
+          ),
+        ],
+      );
+    } else if (mood == 'talk') {
+      return Container(
+        width: 14,
+        height: 14,
+        decoration: BoxDecoration(
+          color: const Color(0xFF2C443B),
+          borderRadius: BorderRadius.circular(7),
+        ),
+      );
+    } else if (mood == 'sad' || mood == 'angry' || mood == 'cold') {
       return Container(
         width: 20,
         height: 10,
@@ -160,7 +280,7 @@ class BmoFaceAvatar extends StatelessWidget {
           ),
         ),
       );
-    } else if (mood == 'surprise') {
+    } else if (mood == 'surprise' || mood == 'scared') {
       return Container(
         width: 14,
         height: 16,
@@ -168,6 +288,16 @@ class BmoFaceAvatar extends StatelessWidget {
           color: const Color(0xFF2C443B),
           borderRadius: BorderRadius.circular(10),
         ),
+      );
+    } else if (mood == 'dizzy' || mood == 'sick' || mood == 'glitch') {
+      return Container(
+        width: 20,
+        height: 3,
+        decoration: BoxDecoration(
+          color: const Color(0xFF2C443B),
+          borderRadius: BorderRadius.circular(2),
+        ),
+        transform: Matrix4.rotationZ(0.1),
       );
     }
 

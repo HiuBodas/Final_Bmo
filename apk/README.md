@@ -15,11 +15,12 @@ Aplikasi pendamping cross-platform (Android & iOS) untuk robot desktop BMO. Dide
 
 2. **BMO Simulator & Remote Wajah**:
    - Avatar Layar Virtual BMO: Mengikuti ekspresi yang dipilih secara real-time.
-   - 12 Mood Wajah Asli BMO:
-     - Senang (`MOOD:HAPPY`) | Kedip (`MOOD:WINK`) | Cinta (`MOOD:LOVE`)
-     - Tidur (`MOOD:SLEEPY`) | Kaget (`MOOD:SURPRISE`) | Keren (`MOOD:COOL`)
-     - Sedih (`MOOD:SAD`) | Marah (`MOOD:ANGRY`) | Lapar (`MOOD:HUNGRY`)
-     - Pusing (`MOOD:DIZZY`) | Glitch (`MOOD:GLITCH`) | Normal (`MOOD:IDLE`)
+   - 26 Mood Wajah Asli BMO:
+     - Senang (`MOOD:HAPPY`) | Keren (`MOOD:COOL`) | Tertawa (`MOOD:LAUGH`) | Cinta (`MOOD:LOVE`) | Kedip (`MOOD:WINK`)
+     - Santai (`MOOD:IDLE`) | Kedip-kedip (`MOOD:BLINK`) | Bicara (`MOOD:TALK`) | Mendengar (`MOOD:LISTEN`) | Fokus (`MOOD:FOCUSED`)
+     - Mikir (`MOOD:THINKING`) | Kaget (`MOOD:SURPRISE`) | Semangat (`MOOD:EXCITED`) | Lapar (`MOOD:HUNGRY`) | Dingin (`MOOD:COLD`)
+     - Kepanasan (`MOOD:HOT`) | Sakit (`MOOD:SICK`) | Pusing (`MOOD:DIZZY`) | Glitch (`MOOD:GLITCH`) | Bingung (`MOOD:CONFUSED`)
+     - Bosan (`MOOD:BORED`) | Sedih (`MOOD:SAD`) | Takut (`MOOD:SCARED`) | Marah (`MOOD:ANGRY`) | Bangun (`MOOD:WAKE`) | Tidur (`MOOD:SLEEPY`)
    - 4 Stimulasi Sensor Sentuh (TTP223):
      - Colek / Poke (`TOUCH:POKE`)
      - Elus / Pet (`TOUCH:HOLD`)

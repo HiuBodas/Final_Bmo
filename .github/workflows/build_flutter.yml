@@ -62,8 +62,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.0.1
-          name: BMO Companion Release v1.0.1
+          tag_name: v1.0.2
+          name: BMO Companion Release v1.0.2
           draft: false
           prerelease: false
           generate_release_notes: true
